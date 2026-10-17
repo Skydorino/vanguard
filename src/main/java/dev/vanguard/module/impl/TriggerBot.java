@@ -15,7 +15,7 @@ import net.minecraft.world.entity.player.Player;
 public class TriggerBot extends Module {
     public TriggerBot() {
         super("TriggerBot", Category.COMBAT, "Attacks the player under your crosshair when your weapon is charged");
-        setting("cooldown", 0.9); // 1.0 = wait for a full charge
+        setting("cooldown", 1.0); // 1.0 = wait for a full charge
     }
 
     @Override

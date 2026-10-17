@@ -14,6 +14,7 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
@@ -22,6 +23,9 @@ import net.minecraft.world.item.Items;
 /** In-game overlay: black rounded pills with an accent edge. */
 public final class Hud {
     private static final int PILL = 0xD0000000;
+    private static int frames;
+    private static int fps;
+    private static long fpsStamp;
 
     private Hud() {}
 
@@ -30,6 +34,12 @@ public final class Hud {
             VanillaHudElements.CHAT,
             Identifier.fromNamespaceAndPath(VanguardClient.MOD_ID, "hud"),
             Hud::render);
+    }
+
+    private static void infoPill(GuiGraphics g, Font font, String text, int y, int accent) {
+        Draw.roundRect(g, 4, y, font.width(text) + 16, y + font.lineHeight + 6, 5, PILL);
+        g.fill(5, y + 3, 7, y + font.lineHeight + 3, accent);
+        g.drawString(font, text, 12, y + 3, 0xFFFFFFFF, false);
     }
 
     private static void render(GuiGraphics g, DeltaTracker tickCounter) {
@@ -45,6 +55,26 @@ public final class Hud {
         Draw.roundRect(g, 4, 4, mw + 18, 18, 5, PILL);
         g.fill(5, 7, 7, 15, accent);
         g.drawString(font, mark, 12, 7, 0xFFFFFFFF, false);
+
+        // FPS and ping pills under the watermark
+        frames++;
+        long nowMs = System.currentTimeMillis();
+        if (nowMs - fpsStamp >= 1000) {
+            fps = frames;
+            frames = 0;
+            fpsStamp = nowMs;
+        }
+        int infoY = 22;
+        Module fpsModule = ModuleManager.find("FpsDisplay");
+        if (fpsModule != null && fpsModule.isEnabled()) {
+            infoPill(g, font, "FPS " + fps, infoY, accent);
+            infoY += font.lineHeight + 8;
+        }
+        Module pingModule = ModuleManager.find("PingDisplay");
+        if (pingModule != null && pingModule.isEnabled()) {
+            PlayerInfo info = mc.getConnection() != null ? mc.getConnection().getPlayerInfo(player.getUUID()) : null;
+            infoPill(g, font, info != null ? "Ping " + info.getLatency() + " ms" : "Ping --", infoY, accent);
+        }
 
         // Enabled modules, right-aligned, longest first
         List<Module> active = ModuleManager.all().stream()

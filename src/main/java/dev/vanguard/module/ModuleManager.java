@@ -4,23 +4,33 @@ import com.mojang.blaze3d.platform.InputConstants;
 import dev.vanguard.Config;
 import dev.vanguard.VanguardClient;
 import dev.vanguard.gui.ClickGui;
+import dev.vanguard.module.impl.AmethystNotifier;
 import dev.vanguard.module.impl.AnchorMacro;
+import dev.vanguard.module.impl.AutoCart;
 import dev.vanguard.module.impl.AutoHitCrystal;
 import dev.vanguard.module.impl.AutoMLG;
+import dev.vanguard.module.impl.AutoMace;
 import dev.vanguard.module.impl.AutoMine;
 import dev.vanguard.module.impl.AutoRefill;
 import dev.vanguard.module.impl.AutoShieldBreak;
 import dev.vanguard.module.impl.AutoStunSlam;
+import dev.vanguard.module.impl.AutoTap;
 import dev.vanguard.module.impl.AutoTotem;
 import dev.vanguard.module.impl.AutoWalk;
 import dev.vanguard.module.impl.AutoXP;
 import dev.vanguard.module.impl.BaseFinder;
+import dev.vanguard.module.impl.CartRefill;
 import dev.vanguard.module.impl.CrystalOptimizer;
 import dev.vanguard.module.impl.Flight;
+import dev.vanguard.module.impl.FpsDisplay;
 import dev.vanguard.module.impl.Freecam;
 import dev.vanguard.module.impl.Fullbright;
+import dev.vanguard.module.impl.Galaxy;
+import dev.vanguard.module.impl.InstantLunge;
 import dev.vanguard.module.impl.JumpCircles;
+import dev.vanguard.module.impl.JumpReset;
 import dev.vanguard.module.impl.PerformanceMode;
+import dev.vanguard.module.impl.PingDisplay;
 import dev.vanguard.module.impl.PlayerESP;
 import dev.vanguard.module.impl.RangeRing;
 import dev.vanguard.module.impl.SchematicBuilder;
@@ -28,6 +38,7 @@ import dev.vanguard.module.impl.Sprint;
 import dev.vanguard.module.impl.SwordInspect;
 import dev.vanguard.module.impl.Tracers;
 import dev.vanguard.module.impl.TriggerBot;
+import dev.vanguard.module.impl.TunnelESP;
 import dev.vanguard.module.impl.Xray;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -63,12 +74,18 @@ public final class ModuleManager {
         add(new AutoHitCrystal());
         add(new CrystalOptimizer());
         add(new AnchorMacro());
+        add(new AutoCart());
+        add(new CartRefill());
         add(new AutoTotem());
         add(new AutoRefill());
         add(new AutoXP());
         add(new TriggerBot());
         add(new AutoShieldBreak());
         add(new AutoStunSlam());
+        add(new AutoMace());
+        add(new InstantLunge());
+        add(new AutoTap());
+        add(new JumpReset());
         add(new Sprint());
         add(new AutoWalk());
         add(new Flight());
@@ -77,16 +94,22 @@ public final class ModuleManager {
         add(new BaseFinder());
         add(new SchematicBuilder());
         add(new Xray());
+        add(new TunnelESP());
+        add(new AmethystNotifier());
         add(new Fullbright());
+        add(new Galaxy());
         add(new SwordInspect());
         add(new PlayerESP());
         add(new Tracers());
         add(new JumpCircles());
         add(new RangeRing());
+        add(new FpsDisplay());
+        add(new PingDisplay());
         add(new AutoMine());
         add(new PerformanceMode());
 
         Config.load();
+        ClientTickEvents.START_CLIENT_TICK.register(ModuleManager::preTick);
         ClientTickEvents.END_CLIENT_TICK.register(ModuleManager::tick);
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> Config.save());
     }
@@ -99,6 +122,15 @@ public final class ModuleManager {
             InputConstants.UNKNOWN.getValue(),
             CATEGORY));
         MODULES.add(module);
+    }
+
+    private static void preTick(Minecraft mc) {
+        LocalPlayer player = mc.player;
+        ClientLevel level = mc.level;
+        if (player == null || level == null) return;
+        for (Module m : MODULES) {
+            if (m.isEnabled()) m.onPreTick(player, level);
+        }
     }
 
     private static void tick(Minecraft mc) {

@@ -73,6 +73,9 @@ public abstract class Module {
 
     protected void onDisable() {}
 
+    /** Called at the very start of each client tick, before the game reads clicks and keys. */
+    public void onPreTick(LocalPlayer player, ClientLevel level) {}
+
     /** Called every client tick while enabled and in a world. */
     public void onTick(LocalPlayer player, ClientLevel level) {}
 

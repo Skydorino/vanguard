@@ -1,4 +1,4 @@
-# Vanguard 0.3
+# Vanguard 0.4
 
 Client-side PvP utility mod for anarchy servers. Fabric, Minecraft 1.21.11, Mojang mappings.
 Open the menu with Right Shift. Click a card to toggle, click "KeyBind" on a card to bind a key
@@ -10,15 +10,15 @@ download the `vanguard-jar` artifact from the finished run in the Actions tab. N
 for 1.21.11 in your mods folder. Local build: JDK 21 + Gradle 9.2+, `gradle build`.
 
 ## Modules
-Combat: AutoHitCrystal, CrystalOptimizer, AnchorMacro, AutoTotem, AutoRefill, AutoXP,
-        TriggerBot, AutoShieldBreak, AutoStunSlam
+Combat: AutoHitCrystal, CrystalOptimizer, AnchorMacro, AutoCart, CartRefill, AutoTotem, AutoRefill,
+        AutoXP, TriggerBot, AutoShieldBreak, AutoStunSlam, AutoMace, InstantLunge, AutoTap, JumpReset
 Movement: Sprint, AutoWalk, Flight, AutoMLG, Freecam
-World: BaseFinder, SchematicBuilder, Xray
-Visuals: Fullbright, SwordInspect, PlayerESP, Tracers, JumpCircles, RangeRing
+World: BaseFinder, SchematicBuilder, Xray, TunnelESP, AmethystNotifier
+Visuals: Fullbright, Galaxy, SwordInspect, PlayerESP, Tracers, JumpCircles, RangeRing, FpsDisplay, PingDisplay
 Misc: AutoMine, PerformanceMode
 
-TriggerBot, AutoHitCrystal, AutoShieldBreak and AutoStunSlam only act on what is under your
-crosshair at normal game reach. Nothing aims for you.
+TriggerBot, AutoHitCrystal, AutoShieldBreak, AutoStunSlam, AutoMace and InstantLunge only act on
+what is under your crosshair at normal game reach. Nothing aims for you.
 
 ## Commands
     /vg list | toggle <module> | set <module> <setting> <value> | save
@@ -32,4 +32,5 @@ crosshair at normal game reach. Nothing aims for you.
 - SchematicBuilder places block types only, not block state.
 - SwordInspect is a HUD overlay, press I.
 - Settings and friends save to config/vanguard.json; enabled state does not.
-- Not yet built: galaxy sky, auto attribute swap, auto pearl catch.
+- Galaxy is drawn over the vanilla sky (terrain hides it), so it also covers the sun and moon.
+- Not built: auto pearl catch, auto drain, safe anchor, auto attribute swap (need definitions).
