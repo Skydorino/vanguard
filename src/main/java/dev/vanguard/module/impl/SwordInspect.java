@@ -7,7 +7,6 @@ import dev.vanguard.module.Category;
 import dev.vanguard.module.Module;
 import dev.vanguard.module.ModuleManager;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.minecraft.Util;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -42,7 +41,7 @@ public class SwordInspect extends Module {
     public void onTick(LocalPlayer player, ClientLevel level) {
         if (inspectKey == null) return;
         while (inspectKey.consumeClick()) {
-            if (!player.getMainHandItem().isEmpty()) startMs = Util.getMillis();
+            if (!player.getMainHandItem().isEmpty()) startMs = System.currentTimeMillis();
         }
     }
 
@@ -61,7 +60,7 @@ public class SwordInspect extends Module {
         Module self = ModuleManager.find("SwordInspect");
         if (startMs < 0 || self == null || !self.isEnabled() || mc.player == null) return;
 
-        long now = Util.getMillis();
+        long now = System.currentTimeMillis();
         float t = (now - startMs) / (float) DURATION_MS;
         if (t >= 1f) {
             startMs = -1;
