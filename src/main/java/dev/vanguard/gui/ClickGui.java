@@ -15,12 +15,13 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
 /**
  * Black module menu: category sidebar, header with search, two-column module cards with a
- * toggle, and a right-click settings panel. Clicks are read from the mouse handler each frame
- * so this does not depend on the Screen input method signatures.
+ * toggle, and a right-click settings panel. Clicks arrive through mouseClicked and are handled
+ * on the next render, where the card layout is known.
  */
 public class ClickGui extends Screen {
     private static final int SIDEBAR = 92;
@@ -33,16 +34,14 @@ public class ClickGui extends Screen {
     private Category selected = Category.COMBAT;
     private Module settingsFor;
     private int scroll;
-    private boolean leftWas;
-    private boolean rightWas;
+    private boolean pendingLeft;
+    private boolean pendingRight;
     private int px, py, pw, ph, cx1, cx2;
     private String flash = "";
     private long flashUntil;
 
     public ClickGui() {
         super(Component.literal("Vanguard"));
-        leftWas = mc.mouseHandler.isLeftPressed();
-        rightWas = mc.mouseHandler.isRightPressed();
     }
 
     @Override
@@ -73,6 +72,13 @@ public class ClickGui extends Screen {
     }
 
     @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (event.button() == 0) pendingLeft = true;
+        if (event.button() == 1) pendingRight = true;
+        return super.mouseClicked(event, doubleClick);
+    }
+
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         scroll -= (int) (scrollY * 16);
         return true;
@@ -90,12 +96,10 @@ public class ClickGui extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float delta) {
-        boolean left = mc.mouseHandler.isLeftPressed();
-        boolean right = mc.mouseHandler.isRightPressed();
-        boolean click = left && !leftWas;
-        boolean rclick = right && !rightWas;
-        leftWas = left;
-        rightWas = right;
+        boolean click = pendingLeft;
+        boolean rclick = pendingRight;
+        pendingLeft = false;
+        pendingRight = false;
 
         int accent = Theme.accent();
         g.fill(0, 0, width, height, 0xB0000000);
@@ -323,3 +327,4 @@ public class ClickGui extends Screen {
         return v == Math.floor(v) ? String.valueOf((long) v) : String.format(Locale.ROOT, "%.1f", v);
     }
 }
+// END OF FILE
