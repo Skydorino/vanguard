@@ -1,0 +1,18 @@
+{
+  "key.category.vanguard.modules": "Vanguard",
+  "key.vanguard.gui": "Open Menu",
+  "key.vanguard.inspect": "Inspect Item",
+  "key.vanguard.autocrystal": "Toggle AutoCrystal",
+  "key.vanguard.crystaloptimizer": "Toggle CrystalOptimizer",
+  "key.vanguard.anchormacro": "Toggle AnchorMacro",
+  "key.vanguard.autototem": "Toggle AutoTotem",
+  "key.vanguard.autorefill": "Toggle AutoRefill",
+  "key.vanguard.autoxp": "Toggle AutoXP",
+  "key.vanguard.killaura": "Toggle KillAura",
+  "key.vanguard.sprint": "Toggle Sprint",
+  "key.vanguard.autowalk": "Toggle AutoWalk",
+  "key.vanguard.basefinder": "Toggle BaseFinder",
+  "key.vanguard.schematicbuilder": "Toggle SchematicBuilder",
+  "key.vanguard.fullbright": "Toggle Fullbright",
+  "key.vanguard.swordinspect": "Toggle SwordInspect"
+}

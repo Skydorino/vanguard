@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "vanguard",
+  "version": "${version}",
+  "name": "Vanguard",
+  "description": "A client-side PvP utility mod for anarchy servers.",
+  "authors": [],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["dev.vanguard.VanguardClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.17.0",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
