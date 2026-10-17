@@ -72,7 +72,7 @@ public class SwordInspect extends Module {
         // 0..1 presence: slides in over the first 18%, out over the last 14%
         float presence = 1f;
         if (t < 0.18f) presence = easeOut(t / 0.18f);
-        else if (t > 0.86f) presence = 1f - easeOut((t - 0.86f) / 0.14f) ;
+        else if (t > 0.86f) presence = 1f - easeOut((t - 0.86f) / 0.14f);
 
         float u = Math.max(0f, Math.min(1f, (t - 0.18f) / 0.68f));
         float spin = easeInOut(u) * (float) (Math.PI * 3.0);        // one and a half turns
@@ -108,3 +108,4 @@ public class SwordInspect extends Module {
         g.drawString(mc.font, name, px, py, Draw.alpha(0xFFFFFF, Math.max(8, a)), false);
     }
 }
+// END OF FILE
