@@ -16,16 +16,17 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Aim at a respawn anchor: charges it with glowstone from your hotbar, then detonates it with
- * any other item. Skips the detonation if the estimated blast would kill you.
+ * Look at a respawn anchor: charges it with glowstone from your hotbar, then detonates it with
+ * a totem (or any non-glowstone item). Works in the Overworld and End, where anchors explode.
  */
 public class AnchorMacro extends Module {
     private int timer;
 
     public AnchorMacro() {
         super("AnchorMacro", Category.COMBAT, "Charges and detonates the respawn anchor you are looking at");
-        setting("delay", 1);
-        setting("selfprotect", 1); // 1 = skip detonation if the blast would be lethal
+        setting("charges", 1);      // glowstone charges before detonating
+        setting("delay", 2);        // ticks between steps (gives the server time to update the anchor)
+        setting("selfprotect", 0);  // 1 = skip detonation if the blast would kill you and you have no totem
     }
 
     @Override
@@ -40,21 +41,25 @@ public class AnchorMacro extends Module {
         if (!state.is(Blocks.RESPAWN_ANCHOR)) return;
 
         int charge = state.getValue(RespawnAnchorBlock.CHARGE);
-        if (charge == 0) {
+        int wanted = Math.max(1, Math.min(4, (int) get("charges")));
+        int delay = Math.max(1, (int) get("delay"));
+
+        if (charge < wanted) {
             int slot = Inv.findHotbar(player, Items.GLOWSTONE);
             if (slot < 0) return;
             player.getInventory().setSelectedSlot(slot);
         } else {
-            if (get("selfprotect") > 0) {
+            if (get("selfprotect") > 0 && !player.getOffhandItem().is(Items.TOTEM_OF_UNDYING)) {
                 Vec3 center = Vec3.atCenterOf(hit.getBlockPos());
                 if (Damage.explosion(player, center, 5.0) >= player.getHealth() + player.getAbsorptionAmount()) return;
             }
-            int slot = Inv.firstHotbarNot(player, Items.GLOWSTONE);
+            int slot = Inv.findHotbar(player, Items.TOTEM_OF_UNDYING);
+            if (slot < 0) slot = Inv.firstHotbarNot(player, Items.GLOWSTONE);
             if (slot < 0) return;
             player.getInventory().setSelectedSlot(slot);
         }
         mc.gameMode.useItemOn(player, InteractionHand.MAIN_HAND, hit);
         player.swing(InteractionHand.MAIN_HAND);
-        timer = (int) get("delay");
+        timer = delay;
     }
 }

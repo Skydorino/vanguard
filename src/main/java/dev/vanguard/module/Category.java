@@ -4,7 +4,8 @@ public enum Category {
     COMBAT("Combat"),
     MOVEMENT("Movement"),
     WORLD("World"),
-    VISUALS("Visuals");
+    VISUALS("Visuals"),
+    MISC("Misc");
 
     public final String label;
 

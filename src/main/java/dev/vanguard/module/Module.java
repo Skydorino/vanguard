@@ -1,5 +1,6 @@
 package dev.vanguard.module;
 
+import dev.vanguard.render.WorldDraw;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -74,4 +75,7 @@ public abstract class Module {
 
     /** Called every client tick while enabled and in a world. */
     public void onTick(LocalPlayer player, ClientLevel level) {}
+
+    /** Called every frame while enabled; draw boxes, lines and rings in the 3D world. */
+    public void onWorldRender(WorldDraw draw) {}
 }

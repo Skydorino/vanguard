@@ -1,5 +1,6 @@
 package dev.vanguard.gui;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import dev.vanguard.Config;
 import dev.vanguard.module.Category;
 import dev.vanguard.module.Module;
@@ -11,10 +12,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
@@ -33,6 +36,7 @@ public class ClickGui extends Screen {
     private EditBox search;
     private Category selected = Category.COMBAT;
     private Module settingsFor;
+    private Module binding;
     private int scroll;
     private boolean pendingLeft;
     private boolean pendingRight;
@@ -76,6 +80,27 @@ public class ClickGui extends Screen {
         if (event.button() == 0) pendingLeft = true;
         if (event.button() == 1) pendingRight = true;
         return super.mouseClicked(event, doubleClick);
+    }
+
+    @Override
+    public boolean keyPressed(KeyEvent event) {
+        if (binding != null) {
+            int key = event.key();
+            if (key == InputConstants.KEY_ESCAPE) {
+                binding = null;
+            } else {
+                if (key == InputConstants.KEY_DELETE || key == InputConstants.KEY_BACKSPACE) {
+                    binding.key.setKey(InputConstants.UNKNOWN);
+                } else {
+                    binding.key.setKey(InputConstants.Type.KEYSYM.getOrCreate(key));
+                }
+                KeyMapping.resetMapping();
+                mc.options.save();
+                binding = null;
+            }
+            return true;
+        }
+        return super.keyPressed(event);
     }
 
     @Override
@@ -130,7 +155,7 @@ public class ClickGui extends Screen {
         Draw.roundRect(g, x1 + 8, y1 + 8, x1 + 26, y1 + 26, 9, accent);
         g.drawString(font, "V", x1 + 14, y1 + 13, 0xFF000000, false);
         g.drawString(font, Component.literal("VANGUARD").withStyle(ChatFormatting.BOLD), x1 + 31, y1 + 10, Theme.TEXT, false);
-        g.drawString(font, "v0.2.0", x1 + 31, y1 + 20, Theme.DIM, false);
+        g.drawString(font, "v0.3.0", x1 + 31, y1 + 20, Theme.DIM, false);
 
         int y = y1 + 36;
         g.drawString(font, "MODULES", x1 + 8, y, Theme.DIM, false);
@@ -227,9 +252,13 @@ public class ClickGui extends Screen {
             if (y + CARD_H < gy1 || y > gy2) continue;
 
             boolean hover = !overPanel && Draw.inside(mx, my, x, Math.max(y, gy1), x + cw, Math.min(y + CARD_H, gy2));
+            boolean overKey = hover && Draw.inside(mx, my, x + 6, y + 14, x + cw - 40, y + 26);
             if (hover) {
                 hovered = m;
-                if (click) m.toggle();
+                if (click) {
+                    if (overKey) binding = m;
+                    else m.toggle();
+                }
                 if (rclick) settingsFor = settingsFor == m ? null : m;
             }
 
@@ -247,7 +276,11 @@ public class ClickGui extends Screen {
             g.drawString(font, "i", iw + 3, y + 5, Theme.BG, false);
 
             String keyText = m.key != null ? m.key.getTranslatedKeyMessage().getString() : "None";
-            g.drawString(font, "KeyBind: " + keyText, x + 9, y + 16, Theme.DIM, false);
+            if (binding == m) {
+                g.drawString(font, "Press a key... (Del clears)", x + 9, y + 16, accent, false);
+            } else {
+                g.drawString(font, "KeyBind: " + keyText, x + 9, y + 16, overKey ? Theme.TEXT : Theme.DIM, false);
+            }
 
             // Toggle switch
             int sx2 = x + cw - 9;
@@ -268,7 +301,7 @@ public class ClickGui extends Screen {
         }
 
         // Footer text
-        String foot = hovered != null ? hovered.description : "Left-click toggles. Right-click opens settings.";
+        String foot = hovered != null ? hovered.description : "Click toggles. Click KeyBind to bind. Right-click for settings.";
         g.drawString(font, foot, cx1 + 4, py + ph - 17, Theme.DIM, false);
 
         if (panel != null) drawSettings(g, panel, mx, my, click, rclick);
