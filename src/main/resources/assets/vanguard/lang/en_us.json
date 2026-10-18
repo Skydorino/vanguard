@@ -44,5 +44,6 @@
   "key.vanguard.pingdisplay": "Toggle PingDisplay",
   "key.vanguard.automine": "Toggle AutoMine",
   "key.vanguard.performancemode": "Toggle PerformanceMode",
-  "key.vanguard.fastuse": "Toggle FastUse"
+  "key.vanguard.fastuse": "Toggle FastUse",
+  "key.vanguard.orbit": "Toggle Orbit"
 }

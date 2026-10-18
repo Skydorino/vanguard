@@ -34,6 +34,7 @@ import dev.vanguard.module.impl.Galaxy;
 import dev.vanguard.module.impl.InstantLunge;
 import dev.vanguard.module.impl.JumpCircles;
 import dev.vanguard.module.impl.JumpReset;
+import dev.vanguard.module.impl.Orbit;
 import dev.vanguard.module.impl.PerformanceMode;
 import dev.vanguard.module.impl.PingDisplay;
 import dev.vanguard.module.impl.PlayerESP;
@@ -98,6 +99,7 @@ public final class ModuleManager {
         add(new JumpReset());
         add(new Sprint());
         add(new AutoWalk());
+        add(new Orbit());
         add(new Flight());
         add(new Boatfly());
         add(new AirWalk());
