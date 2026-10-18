@@ -4,7 +4,7 @@ import dev.vanguard.module.Category;
 import dev.vanguard.module.Module;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.tags.EntityTypeTags;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 
@@ -20,7 +20,9 @@ public class Boatfly extends Module {
     }
 
     private static boolean isBoat(Entity e) {
-        return e != null && e.getType().is(EntityTypeTags.BOATS);
+        if (e == null) return false;
+        String id = BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()).getPath();
+        return id.endsWith("_boat") || id.endsWith("_raft");
     }
 
     @Override
@@ -47,3 +49,4 @@ public class Boatfly extends Module {
         if (mc.player != null && isBoat(mc.player.getVehicle())) mc.player.getVehicle().setNoGravity(false);
     }
 }
+// END OF FILE
