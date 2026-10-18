@@ -49,4 +49,3 @@ public class Boatfly extends Module {
         if (mc.player != null && isBoat(mc.player.getVehicle())) mc.player.getVehicle().setNoGravity(false);
     }
 }
-// END OF FILE

@@ -12,17 +12,16 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Items;
 
 /**
- * While falling at the player under your crosshair: if they are blocking, axe the shield first,
- * then mace smash next tick; otherwise just smash. The axe and mace can be anywhere in your
- * inventory; whatever you are holding is put back afterwards.
+ * Aim at a player while falling. If their shield is up, it axes the shield and mace-smashes in the
+ * same tick (so knockback from the axe can't carry them out of range first); otherwise it just
+ * smashes. The axe and mace can be anywhere in your inventory, and your held slot is put back.
  */
 public class AutoStunSlam extends Module {
-    private int stage;          // 0 idle, 1 = smash next tick, 2 = restore slot next tick
     private int previousSlot = -1;
-    private int maceSlot = -1;
 
     public AutoStunSlam() {
-        super("AutoStunSlam", Category.COMBAT, "Axe-stuns a shield, then mace-smashes, while falling");
+        super("AutoStunSlam", Category.COMBAT, "Axe-stuns a raised shield and mace-smashes in the same tick");
+        setting("needfall", 1);  // 1 = only while falling; 0 = also on the ground (smash will be weak)
         setting("minfall", 1.5);
         setting("axeslot", 7);   // hotbar slot (1-9) an axe from your inventory is moved into
         setting("maceslot", 8);  // hotbar slot (1-9) a mace from your inventory is moved into
@@ -30,9 +29,7 @@ public class AutoStunSlam extends Module {
 
     @Override
     protected void onDisable() {
-        stage = 0;
         previousSlot = -1;
-        maceSlot = -1;
     }
 
     private int slotSetting(String key) {
@@ -43,24 +40,13 @@ public class AutoStunSlam extends Module {
     public void onTick(LocalPlayer player, ClientLevel level) {
         if (mc.gameMode == null || mc.screen != null) return;
 
-        if (stage == 2) {
-            if (previousSlot >= 0) player.getInventory().setSelectedSlot(previousSlot);
+        if (previousSlot >= 0) {
+            player.getInventory().setSelectedSlot(previousSlot);
             previousSlot = -1;
-            stage = 0;
             return;
         }
-        if (stage == 1) {
-            Player target = Targets.crosshairPlayer(player);
-            if (maceSlot >= 0 && target != null) {
-                player.getInventory().setSelectedSlot(maceSlot);
-                mc.gameMode.attack(player, target);
-                player.swing(InteractionHand.MAIN_HAND);
-            }
-            stage = 2;
-            return;
-        }
+        if (get("needfall") > 0 && (player.onGround() || player.fallDistance < get("minfall"))) return;
 
-        if (player.onGround() || player.fallDistance < get("minfall")) return;
         Player target = Targets.crosshairPlayer(player);
         if (target == null) return;
 
@@ -72,19 +58,21 @@ public class AutoStunSlam extends Module {
             int axe = Inv.bring(player, s -> s.is(ItemTags.AXES), slotSetting("axeslot"));
             if (axe >= 0) {
                 previousSlot = current;
-                maceSlot = mace;
+                // Both hits in the same tick: the axe's knockback has not moved them yet
                 player.getInventory().setSelectedSlot(axe);
                 mc.gameMode.attack(player, target);
+                player.getInventory().setSelectedSlot(mace);
+                mc.gameMode.attack(player, target);
                 player.swing(InteractionHand.MAIN_HAND);
-                stage = 1;
                 return;
             }
         }
+
+        // No raised shield (or no axe): just smash, once your weapon is charged
         if (player.getAttackStrengthScale(0.5f) < 0.9f) return;
         previousSlot = current;
         player.getInventory().setSelectedSlot(mace);
         mc.gameMode.attack(player, target);
         player.swing(InteractionHand.MAIN_HAND);
-        stage = 2;
     }
 }
