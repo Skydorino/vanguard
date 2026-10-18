@@ -76,3 +76,4 @@ public class AutoStunSlam extends Module {
         player.swing(InteractionHand.MAIN_HAND);
     }
 }
+// END OF FILE
