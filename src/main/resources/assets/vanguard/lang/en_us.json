@@ -45,5 +45,6 @@
   "key.vanguard.automine": "Toggle AutoMine",
   "key.vanguard.performancemode": "Toggle PerformanceMode",
   "key.vanguard.fastuse": "Toggle FastUse",
-  "key.vanguard.orbit": "Toggle Orbit"
+  "key.vanguard.orbit": "Toggle Orbit",
+  "key.vanguard.itemlean": "Toggle ItemLean"
 }

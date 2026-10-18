@@ -15,7 +15,7 @@ Combat: AutoHitCrystal, CrystalOptimizer, AnchorMacro, SafeAnchor, AutoCart, Car
         InstantLunge, AutoTap, JumpReset, Reach
 Movement: Sprint, AutoWalk, Flight, Boatfly, AirWalk, AutoMLG, AutoPearlCatch, Freecam
 World: BaseFinder, SchematicBuilder, Xray, TunnelESP, AmethystNotifier
-Visuals: Fullbright, Galaxy, SwordInspect, PlayerESP, Tracers, JumpCircles, RangeRing, FpsDisplay, PingDisplay
+Visuals: Fullbright, Galaxy, SwordInspect, ItemLean, PlayerESP, Tracers, JumpCircles, RangeRing, FpsDisplay, PingDisplay
 Misc: AutoMine, PerformanceMode, FastUse
 
 TriggerBot, AutoHitCrystal, AutoShieldBreak, AutoStunSlam, AutoMace and InstantLunge only act on

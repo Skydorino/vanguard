@@ -33,6 +33,7 @@ import dev.vanguard.module.impl.Fullbright;
 import dev.vanguard.module.impl.Galaxy;
 import dev.vanguard.module.impl.InstantLunge;
 import dev.vanguard.module.impl.JumpCircles;
+import dev.vanguard.module.impl.ItemLean;
 import dev.vanguard.module.impl.JumpReset;
 import dev.vanguard.module.impl.Orbit;
 import dev.vanguard.module.impl.PerformanceMode;
@@ -114,6 +115,7 @@ public final class ModuleManager {
         add(new Fullbright());
         add(new Galaxy());
         add(new SwordInspect());
+        add(new ItemLean());
         add(new PlayerESP());
         add(new Tracers());
         add(new JumpCircles());
