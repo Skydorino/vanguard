@@ -155,7 +155,7 @@ public class ClickGui extends Screen {
         Draw.roundRect(g, x1 + 8, y1 + 8, x1 + 26, y1 + 26, 9, accent);
         g.drawString(font, "V", x1 + 14, y1 + 13, 0xFF000000, false);
         g.drawString(font, Component.literal("VANGUARD").withStyle(ChatFormatting.BOLD), x1 + 31, y1 + 10, Theme.TEXT, false);
-        g.drawString(font, "v0.4.0", x1 + 31, y1 + 20, Theme.DIM, false);
+        g.drawString(font, "v0.5.1", x1 + 31, y1 + 20, Theme.DIM, false);
 
         int y = y1 + 36;
         g.drawString(font, "MODULES", x1 + 8, y, Theme.DIM, false);

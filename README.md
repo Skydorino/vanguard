@@ -1,4 +1,4 @@
-# Vanguard 0.4
+# Vanguard 0.5.1
 
 Client-side PvP utility mod for anarchy servers. Fabric, Minecraft 1.21.11, Mojang mappings.
 Open the menu with Right Shift. Click a card to toggle, click "KeyBind" on a card to bind a key
@@ -10,15 +10,17 @@ download the `vanguard-jar` artifact from the finished run in the Actions tab. N
 for 1.21.11 in your mods folder. Local build: JDK 21 + Gradle 9.2+, `gradle build`.
 
 ## Modules
-Combat: AutoHitCrystal, CrystalOptimizer, AnchorMacro, AutoCart, CartRefill, AutoTotem, AutoRefill,
-        AutoXP, TriggerBot, AutoShieldBreak, AutoStunSlam, AutoMace, InstantLunge, AutoTap, JumpReset
-Movement: Sprint, AutoWalk, Flight, AutoMLG, Freecam
+Combat: AutoHitCrystal, CrystalOptimizer, AnchorMacro, SafeAnchor, AutoCart, CartRefill, AutoTotem,
+        AutoRefill, AutoXP, AutoDrain, TriggerBot, AutoShieldBreak, AutoStunSlam, AutoMace,
+        InstantLunge, AutoTap, JumpReset, Reach
+Movement: Sprint, AutoWalk, Flight, Boatfly, AirWalk, AutoMLG, AutoPearlCatch, Freecam
 World: BaseFinder, SchematicBuilder, Xray, TunnelESP, AmethystNotifier
 Visuals: Fullbright, Galaxy, SwordInspect, PlayerESP, Tracers, JumpCircles, RangeRing, FpsDisplay, PingDisplay
-Misc: AutoMine, PerformanceMode
+Misc: AutoMine, PerformanceMode, FastUse
 
 TriggerBot, AutoHitCrystal, AutoShieldBreak, AutoStunSlam, AutoMace and InstantLunge only act on
-what is under your crosshair at normal game reach. Nothing aims for you.
+what is under your crosshair, at your current reach (normal unless Reach is on). Nothing aims for you.
+Reach only changes what the client allows; many servers reject hits past roughly 3-4 blocks.
 
 ## Commands
     /vg list | toggle <module> | set <module> <setting> <value> | save
@@ -33,4 +35,6 @@ what is under your crosshair at normal game reach. Nothing aims for you.
 - SwordInspect is a HUD overlay, press I.
 - Settings and friends save to config/vanguard.json; enabled state does not.
 - Galaxy is drawn over the vanilla sky (terrain hides it), so it also covers the sun and moon.
-- Not built: auto pearl catch, auto drain, safe anchor, auto attribute swap (need definitions).
+- AutoPearlCatch and AutoCart are one-shot: switch them on, they run once, then switch themselves off.
+- SafeAnchor walls you off from the anchor with glowstone in the blocks beside you (you cannot place a block in your own spot).
+- Not built: auto attribute swap (needs a definition).
