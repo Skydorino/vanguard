@@ -47,5 +47,8 @@
   "key.vanguard.fastuse": "Toggle FastUse",
   "key.vanguard.orbit": "Toggle Orbit",
   "key.vanguard.itemlean": "Toggle ItemLean",
-  "key.vanguard.swinganimations": "Toggle SwingAnimations"
+  "key.vanguard.swinganimations": "Toggle SwingAnimations",
+  "key.vanguard.autotrap": "Toggle AutoTrap",
+  "key.vanguard.wallhit": "Toggle WallHit",
+  "key.vanguard.freelook": "Toggle Freelook"
 }

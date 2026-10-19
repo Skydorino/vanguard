@@ -4,7 +4,8 @@
   "package": "dev.vanguard.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "ItemInHandRendererMixin"
+    "ItemInHandRendererMixin",
+    "CameraMixin"
   ],
   "injectors": {
     "defaultRequire": 0

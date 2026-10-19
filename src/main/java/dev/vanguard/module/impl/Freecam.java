@@ -9,19 +9,29 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.ClientInput;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.player.RemotePlayer;
+import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Detaches the camera so you can fly around while your character stands still. Your body stays
- * put and your own movement keys are ignored until you turn it off.
+ * Detaches the camera so you can fly around while your character stands still and keeps facing the
+ * same way. WASD moves along the way the camera faces (flat), Jump goes up, Sneak goes down, and
+ * your sprint key flies faster. Movement eases in and out, and turning is applied every frame so
+ * it stays smooth.
  */
 public class Freecam extends Module {
     private RemotePlayer camera;
     private ClientInput savedInput;
+    private float lockYaw;
+    private float lockPitch;
+    private float camYaw;
+    private float camPitch;
+    private Vec3 velocity = Vec3.ZERO;
 
     public Freecam() {
         super("Freecam", Category.MOVEMENT, "Fly the camera around while your character stays put");
-        setting("speed", 1.0);
+        setting("speed", 0.8);   // blocks per tick at full speed
+        setting("fast", 2.5);    // speed multiplier while your sprint key is held
+        setting("smooth", 0.35); // 1 = instant, lower = floatier
     }
 
     @Override
@@ -29,9 +39,20 @@ public class Freecam extends Module {
         LocalPlayer player = mc.player;
         ClientLevel level = mc.level;
         if (player == null || level == null) return;
+
+        lockYaw = camYaw = player.getYRot();
+        lockPitch = camPitch = player.getXRot();
+        velocity = Vec3.ZERO;
+
         camera = new RemotePlayer(level, new GameProfile(UUID.randomUUID(), "freecam"));
         camera.copyPosition(player);
         camera.noPhysics = true;
+        camera.setYRot(camYaw);
+        camera.setXRot(camPitch);
+        camera.yRotO = camYaw;
+        camera.xRotO = camPitch;
+        camera.setOldPosAndRot();
+
         savedInput = player.input;
         player.input = new ClientInput();
         mc.setCameraEntity(camera);
@@ -46,35 +67,50 @@ public class Freecam extends Module {
         }
         camera = null;
         savedInput = null;
+        velocity = Vec3.ZERO;
     }
 
     @Override
     public void onTick(LocalPlayer player, ClientLevel level) {
         if (camera == null) return;
         camera.setOldPosAndRot();
-        camera.setYRot(player.getYRot());
-        camera.setXRot(player.getXRot());
 
-        double yaw = Math.toRadians(player.getYRot());
-        Vec3 look = Vec3.directionFromRotation(player.getXRot(), player.getYRot());
+        double yaw = Math.toRadians(camYaw);
+        Vec3 forward = new Vec3(-Math.sin(yaw), 0.0, Math.cos(yaw));
         Vec3 right = new Vec3(-Math.cos(yaw), 0.0, -Math.sin(yaw));
-        Vec3 move = Vec3.ZERO;
-        if (mc.options.keyUp.isDown()) move = move.add(look);
-        if (mc.options.keyDown.isDown()) move = move.subtract(look);
-        if (mc.options.keyRight.isDown()) move = move.add(right);
-        if (mc.options.keyLeft.isDown()) move = move.subtract(right);
-        if (mc.options.keyJump.isDown()) move = move.add(0.0, 1.0, 0.0);
-        if (mc.options.keyShift.isDown()) move = move.add(0.0, -1.0, 0.0);
-        if (move.lengthSqr() > 0.0) move = move.normalize().scale(get("speed"));
-        camera.setPos(camera.getX() + move.x, camera.getY() + move.y, camera.getZ() + move.z);
+
+        Vec3 wish = Vec3.ZERO;
+        if (mc.options.keyUp.isDown()) wish = wish.add(forward);
+        if (mc.options.keyDown.isDown()) wish = wish.subtract(forward);
+        if (mc.options.keyRight.isDown()) wish = wish.add(right);
+        if (mc.options.keyLeft.isDown()) wish = wish.subtract(right);
+        if (mc.options.keyJump.isDown()) wish = wish.add(0.0, 1.0, 0.0);
+        if (mc.options.keyShift.isDown()) wish = wish.add(0.0, -1.0, 0.0);
+
+        double speed = get("speed") * (mc.options.keySprint.isDown() ? get("fast") : 1.0);
+        if (wish.lengthSqr() > 0.0) wish = wish.normalize().scale(speed);
+
+        double smooth = Math.max(0.05, Math.min(1.0, get("smooth")));
+        velocity = velocity.add(wish.subtract(velocity).scale(smooth));
+        if (velocity.lengthSqr() < 1.0e-6) velocity = Vec3.ZERO;
+
+        camera.setPos(camera.getX() + velocity.x, camera.getY() + velocity.y, camera.getZ() + velocity.z);
     }
 
+    /** Every frame: turn the mouse into camera rotation and keep your real character facing forward. */
     @Override
     public void onWorldRender(WorldDraw draw) {
-        // Keep the view glued to the mouse between ticks
-        if (camera != null && mc.player != null) {
-            camera.setYRot(mc.player.getYRot());
-            camera.setXRot(mc.player.getXRot());
-        }
+        LocalPlayer player = mc.player;
+        if (camera == null || player == null) return;
+
+        camYaw += Mth.wrapDegrees(player.getYRot() - lockYaw);
+        camPitch = Mth.clamp(camPitch + (player.getXRot() - lockPitch), -90.0f, 90.0f);
+        player.setYRot(lockYaw);
+        player.setXRot(lockPitch);
+
+        camera.setYRot(camYaw);
+        camera.setXRot(camPitch);
+        camera.yRotO = camYaw;
+        camera.xRotO = camPitch;
     }
 }
