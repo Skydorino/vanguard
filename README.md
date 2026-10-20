@@ -10,7 +10,7 @@ download the `vanguard-jar` artifact from the finished run in the Actions tab. N
 for 1.21.11 in your mods folder. Local build: JDK 21 + Gradle 9.2+, `gradle build`.
 
 ## Modules
-Combat: AutoHitCrystal, CrystalOptimizer, AnchorMacro, SafeAnchor, AutoCart, CartRefill, AutoTotem,
+Combat: AutoHitCrystal, InstantCrystal, CrystalOptimizer, AnchorMacro, SafeAnchor, AutoCart, CartRefill, AutoTotem,
         AutoRefill, AutoXP, AutoDrain, TriggerBot, AutoShieldBreak, AutoStunSlam, AutoMace,
         InstantLunge, AutoTap, JumpReset, Reach, WallHit, AutoTrap
 Movement: Sprint, AutoWalk, Flight, Boatfly, AirWalk, AutoMLG, AutoPearlCatch, Freecam, Orbit

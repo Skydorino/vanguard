@@ -5,6 +5,7 @@ import dev.vanguard.module.Category;
 import dev.vanguard.module.Module;
 import dev.vanguard.render.WorldDraw;
 import java.util.UUID;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.ClientInput;
 import net.minecraft.client.player.LocalPlayer;
@@ -16,7 +17,8 @@ import net.minecraft.world.phys.Vec3;
  * Detaches the camera so you can fly around while your character stands still and keeps facing the
  * same way. WASD moves along the way the camera faces (flat), Jump goes up, Sneak goes down, and
  * your sprint key flies faster. Movement eases in and out, and turning is applied every frame so
- * it stays smooth.
+ * it stays smooth. Attack, use and pick-block clicks are swallowed while it is on, so nothing can be
+ * attacked, placed or used from the camera's view.
  */
 public class Freecam extends Module {
     private RemotePlayer camera;
@@ -32,6 +34,7 @@ public class Freecam extends Module {
         setting("speed", 0.8);   // blocks per tick at full speed
         setting("fast", 2.5);    // speed multiplier while your sprint key is held
         setting("smooth", 0.35); // 1 = instant, lower = floatier
+        setting("blockclicks", 1); // 1 = ignore attack/use/pick clicks while detached
     }
 
     @Override
@@ -68,6 +71,18 @@ public class Freecam extends Module {
         camera = null;
         savedInput = null;
         velocity = Vec3.ZERO;
+        KeyMapping.setAll(); // give the mouse buttons back to your real state
+    }
+
+    /** Runs before the game reads your clicks, so they can be dropped while the camera is detached. */
+    @Override
+    public void onPreTick(LocalPlayer player, ClientLevel level) {
+        if (camera == null || get("blockclicks") <= 0) return;
+        mc.options.keyAttack.setDown(false);
+        mc.options.keyUse.setDown(false);
+        while (mc.options.keyAttack.consumeClick()) { }
+        while (mc.options.keyUse.consumeClick()) { }
+        while (mc.options.keyPickItem.consumeClick()) { }
     }
 
     @Override

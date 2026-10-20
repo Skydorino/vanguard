@@ -36,6 +36,7 @@ import dev.vanguard.module.impl.Galaxy;
 import dev.vanguard.module.impl.InstantLunge;
 import dev.vanguard.module.impl.JumpCircles;
 import dev.vanguard.module.impl.ItemLean;
+import dev.vanguard.module.impl.InstantCrystal;
 import dev.vanguard.module.impl.JumpReset;
 import dev.vanguard.module.impl.Orbit;
 import dev.vanguard.module.impl.PerformanceMode;
@@ -85,6 +86,7 @@ public final class ModuleManager {
         SwordInspect.registerKey();
 
         add(new AutoHitCrystal());
+        add(new InstantCrystal());
         add(new CrystalOptimizer());
         add(new AnchorMacro());
         add(new SafeAnchor());

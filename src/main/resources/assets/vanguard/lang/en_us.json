@@ -50,5 +50,6 @@
   "key.vanguard.swinganimations": "Toggle SwingAnimations",
   "key.vanguard.autotrap": "Toggle AutoTrap",
   "key.vanguard.wallhit": "Toggle WallHit",
-  "key.vanguard.freelook": "Toggle Freelook"
+  "key.vanguard.freelook": "Toggle Freelook",
+  "key.vanguard.instantcrystal": "Toggle InstantCrystal"
 }
