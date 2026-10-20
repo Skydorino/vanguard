@@ -5,8 +5,6 @@ import dev.vanguard.Config;
 import dev.vanguard.module.Category;
 import dev.vanguard.module.Module;
 import dev.vanguard.module.ModuleManager;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -20,29 +18,39 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 /**
- * Black module menu: category sidebar, header with search, two-column module cards with a
- * toggle, and a right-click settings panel. Clicks arrive through mouseClicked and are handled
- * on the next render, where the card layout is known.
+ * Dark, rounded menu: sidebar with a logo, feature search and two-line category entries; a header
+ * with tabs; and a list of modules, each with an Enable button, a Settings button, tags and a
+ * click-to-bind key. Clicks arrive through mouseClicked and are handled on the next render.
  */
 public class ClickGui extends Screen {
-    private static final int SIDEBAR = 92;
-    private static final int CARD_H = 28;
-    private static final int GAP = 6;
-    private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
+    private static final int SIDE = 122;
+    private static final int ROW_H = 40;
+    private static final String[] TABS = {"All", "Enabled", "Disabled"};
 
     private final Minecraft mc = Minecraft.getInstance();
     private EditBox search;
     private Category selected = Category.COMBAT;
+    private int tab;
     private Module settingsFor;
     private Module binding;
     private int scroll;
     private boolean pendingLeft;
     private boolean pendingRight;
-    private int px, py, pw, ph, cx1, cx2;
+    private int px, py, pw, ph;
     private String flash = "";
     private long flashUntil;
+
+    private final ItemStack combatIcon = new ItemStack(Items.DIAMOND_SWORD);
+    private final ItemStack movementIcon = new ItemStack(Items.FEATHER);
+    private final ItemStack worldIcon = new ItemStack(Items.COMPASS);
+    private final ItemStack visualsIcon = new ItemStack(Items.ENDER_EYE);
+    private final ItemStack miscIcon = new ItemStack(Items.REDSTONE);
+    private final ItemStack themeIcon = new ItemStack(Items.PAINTING);
+    private final ItemStack saveIcon = new ItemStack(Items.WRITABLE_BOOK);
 
     public ClickGui() {
         super(Component.literal("Vanguard"));
@@ -50,16 +58,14 @@ public class ClickGui extends Screen {
 
     @Override
     protected void init() {
-        pw = Math.min(450, width - 16);
-        ph = Math.min(262, height - 16);
+        pw = Math.min(540, width - 16);
+        ph = Math.min(320, height - 16);
         px = (width - pw) / 2;
         py = (height - ph) / 2;
-        cx1 = px + SIDEBAR + 8;
-        cx2 = px + pw - 6;
 
-        search = new EditBox(font, cx2 - 100, py + 13, 86, 12, Component.literal("Search"));
+        search = new EditBox(font, px + 22, py + 47, SIDE - 40, 10, Component.literal("Search"));
         search.setBordered(false);
-        search.setHint(Component.literal("Search modules..."));
+        search.setHint(Component.literal("Search features..."));
         search.setMaxLength(24);
         addWidget(search);
     }
@@ -105,19 +111,97 @@ public class ClickGui extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        scroll -= (int) (scrollY * 16);
+        scroll -= (int) (scrollY * 18);
         return true;
+    }
+
+    // ---- small text helpers (the game font only has one size, so scale it) ----
+
+    private void small(GuiGraphics g, String text, int x, int y, int color, float scale) {
+        g.pose().pushMatrix();
+        g.pose().translate((float) x, (float) y);
+        g.pose().scale(scale, scale);
+        g.drawString(font, text, 0, 0, color, false);
+        g.pose().popMatrix();
+    }
+
+    private void bold(GuiGraphics g, String text, int x, int y, int color, float scale) {
+        g.pose().pushMatrix();
+        g.pose().translate((float) x, (float) y);
+        g.pose().scale(scale, scale);
+        g.drawString(font, Component.literal(text).withStyle(ChatFormatting.BOLD), 0, 0, color, false);
+        g.pose().popMatrix();
+    }
+
+    private int smallWidth(String text, float scale) {
+        return (int) (font.width(text) * scale);
+    }
+
+    private void icon(GuiGraphics g, ItemStack stack, int x, int y) {
+        g.pose().pushMatrix();
+        g.pose().translate((float) x, (float) y);
+        g.pose().scale(0.75f, 0.75f);
+        g.renderItem(stack, 0, 0);
+        g.pose().popMatrix();
+    }
+
+    /** Pill button. Returns true if it was clicked this frame. */
+    private boolean button(GuiGraphics g, int x, int y, int w, int h, String label, boolean filled,
+                           int mx, int my, boolean click) {
+        int accent = Theme.accent();
+        boolean hover = Draw.inside(mx, my, x, y, x + w, y + h);
+        if (filled) {
+            Draw.roundRect(g, x, y, x + w, y + h, 5, hover ? Draw.blend(accent, 0xFFFFFFFF, 0.85f) : accent);
+        } else {
+            Draw.roundBox(g, x, y, x + w, y + h, 5, hover ? 0xFF2E2E3C : Theme.CARD_BORDER, Theme.CARD);
+        }
+        int tw = font.width(label);
+        g.drawString(font, label, x + (w - tw) / 2, y + (h - 8) / 2, filled ? 0xFFFFFFFF : Theme.TEXT, false);
+        return hover && click;
+    }
+
+    private static String subtitle(Category c) {
+        return switch (c) {
+            case COMBAT -> "Crystals, anchors, PvP";
+            case MOVEMENT -> "Get around faster";
+            case WORLD -> "Find bases and ores";
+            case VISUALS -> "See more, react faster";
+            case MISC -> "Quality of life tools";
+        };
+    }
+
+    private ItemStack iconFor(Category c) {
+        return switch (c) {
+            case COMBAT -> combatIcon;
+            case MOVEMENT -> movementIcon;
+            case WORLD -> worldIcon;
+            case VISUALS -> visualsIcon;
+            case MISC -> miscIcon;
+        };
     }
 
     private List<Module> visible() {
         String q = search.getValue().trim().toLowerCase(Locale.ROOT);
         List<Module> out = new ArrayList<>();
         for (Module m : ModuleManager.all()) {
-            boolean match = q.isEmpty() ? m.category == selected : m.name.toLowerCase(Locale.ROOT).contains(q);
-            if (match) out.add(m);
+            boolean match = q.isEmpty()
+                ? m.category == selected
+                : m.name.toLowerCase(Locale.ROOT).contains(q) || m.description.toLowerCase(Locale.ROOT).contains(q);
+            if (!match) continue;
+            if (tab == 1 && !m.isEnabled()) continue;
+            if (tab == 2 && m.isEnabled()) continue;
+            out.add(m);
         }
         return out;
     }
+
+    private int enabledCount() {
+        int n = 0;
+        for (Module m : ModuleManager.all()) if (m.isEnabled()) n++;
+        return n;
+    }
+
+    // ---- frame ----
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float delta) {
@@ -126,196 +210,209 @@ public class ClickGui extends Screen {
         pendingLeft = false;
         pendingRight = false;
 
-        int accent = Theme.accent();
-        g.fill(0, 0, width, height, 0xB0000000);
-        Draw.glow(g, px, py, px + pw, py + ph, 10, accent);
-        Draw.roundRect(g, px, py, px + pw, py + ph, 10, Theme.BG);
+        g.fill(0, 0, width, height, 0x70000000);
+        Draw.glow(g, px, py, px + pw, py + ph, 12, 0x000000);
+        Draw.roundBox(g, px, py, px + pw, py + ph, 12, Theme.CARD_BORDER, Theme.BG);
+        g.fill(px + SIDE, py + 10, px + SIDE + 1, py + ph - 10, Theme.CARD_BORDER);
 
         drawSidebar(g, mx, my, click);
-        drawHeader(g);
-        drawModules(g, mx, my, click, rclick);
+        drawMain(g, mx, my, click, rclick);
 
         if (!flash.isEmpty() && System.currentTimeMillis() < flashUntil) {
             int w = font.width(flash);
-            Draw.roundRect(g, px + pw / 2 - w / 2 - 6, py + ph - 24, px + pw / 2 + w / 2 + 6, py + ph - 8, 5, 0xF0000000);
-            g.drawString(font, flash, px + pw / 2 - w / 2, py + ph - 20, accent, false);
+            int cx = px + SIDE + (pw - SIDE) / 2;
+            Draw.roundBox(g, cx - w / 2 - 8, py + ph - 30, cx + w / 2 + 8, py + ph - 14, 6, Theme.accent(), 0xF0000000);
+            g.drawString(font, flash, cx - w / 2, py + ph - 26, Theme.TEXT, false);
         }
         search.render(g, mx, my, delta);
     }
 
     private void drawSidebar(GuiGraphics g, int mx, int my, boolean click) {
         int accent = Theme.accent();
-        int x1 = px + 6;
-        int y1 = py + 6;
-        int x2 = px + SIDEBAR;
-        int y2 = py + ph - 6;
-        Draw.roundRect(g, x1, y1, x2, y2, 8, Theme.PANEL);
 
-        // Logo
-        Draw.roundRect(g, x1 + 8, y1 + 8, x1 + 26, y1 + 26, 9, accent);
-        g.drawString(font, "V", x1 + 14, y1 + 13, 0xFF000000, false);
-        g.drawString(font, Component.literal("VANGUARD").withStyle(ChatFormatting.BOLD), x1 + 31, y1 + 10, Theme.TEXT, false);
-        g.drawString(font, "v0.5.3", x1 + 31, y1 + 20, Theme.DIM, false);
+        // Logo and name
+        Draw.roundRect(g, px + 12, py + 12, px + 34, py + 34, 7, accent);
+        g.drawString(font, Component.literal("V").withStyle(ChatFormatting.BOLD), px + 20, py + 19, 0xFFFFFFFF, false);
+        bold(g, "Vanguard", px + 42, py + 13, Theme.TEXT, 1.0f);
+        small(g, "Utility client 0.8", px + 42, py + 25, Theme.DIM, 0.75f);
 
-        int y = y1 + 36;
-        g.drawString(font, "MODULES", x1 + 8, y, Theme.DIM, false);
-        y += 13;
+        // Search pill
+        Draw.roundBox(g, px + 10, py + 42, px + SIDE - 10, py + 58, 6, Theme.CARD_BORDER, Theme.CARD);
+        small(g, "o", px + 15, py + 46, Theme.DIM, 1.0f);
+
+        // Navigation
+        int avail = ph - 66 - 46;
+        int itemH = Math.max(20, Math.min(28, avail / 7));
+        boolean twoLine = itemH >= 24;
+        int ny = py + 64;
         for (Category c : Category.values()) {
             boolean sel = c == selected && search.getValue().isEmpty();
-            boolean hover = Draw.inside(mx, my, x1 + 4, y, x2 - 4, y + 16);
-            if (sel) {
-                Draw.roundRect(g, x1 + 4, y, x2 - 4, y + 16, 5, Draw.alpha(accent, 48));
-                g.fill(x1 + 4, y + 3, x1 + 6, y + 13, accent);
-            } else if (hover) {
-                Draw.roundRect(g, x1 + 4, y, x2 - 4, y + 16, 5, 0xFF16161D);
-            }
-            g.drawString(font, c.label, x1 + 14, y + 4, sel ? accent : Theme.TEXT, false);
-            if (hover && click) {
+            if (navItem(g, px + 6, ny, SIDE - 12, itemH, iconFor(c), c.label, subtitle(c), twoLine, sel, mx, my, click)) {
                 selected = c;
                 search.setValue("");
                 scroll = 0;
                 settingsFor = null;
             }
-            y += 18;
+            ny += itemH;
         }
-
-        y += 8;
-        g.drawString(font, "GENERAL", x1 + 8, y, Theme.DIM, false);
-        y += 13;
-
-        boolean hoverTheme = Draw.inside(mx, my, x1 + 4, y, x2 - 4, y + 16);
-        if (hoverTheme) Draw.roundRect(g, x1 + 4, y, x2 - 4, y + 16, 5, 0xFF16161D);
-        g.drawString(font, "Theme", x1 + 14, y + 4, Theme.TEXT, false);
-        Draw.roundRect(g, x2 - 18, y + 4, x2 - 10, y + 12, 4, accent);
-        if (hoverTheme && click) Theme.next();
-        y += 18;
-
-        boolean hoverCfg = Draw.inside(mx, my, x1 + 4, y, x2 - 4, y + 16);
-        if (hoverCfg) Draw.roundRect(g, x1 + 4, y, x2 - 4, y + 16, 5, 0xFF16161D);
-        g.drawString(font, "Save config", x1 + 14, y + 4, Theme.TEXT, false);
-        if (hoverCfg && click) {
+        ny += 4;
+        if (navItem(g, px + 6, ny, SIDE - 12, itemH, themeIcon, "Themes", "Choose your color", twoLine, false, mx, my, click)) {
+            Theme.next();
+        }
+        ny += itemH;
+        if (navItem(g, px + 6, ny, SIDE - 12, itemH, saveIcon, "Save config", "Keep your settings", twoLine, false, mx, my, click)) {
             Config.save();
             flash = "Config saved";
             flashUntil = System.currentTimeMillis() + 1500;
         }
 
-        // Footer: player
-        String name = mc.player != null ? mc.player.getName().getString() : "player";
-        Draw.roundBox(g, x1 + 4, y2 - 28, x2 - 4, y2 - 4, 7, Theme.CARD_BORDER, Theme.CARD);
-        g.drawString(font, name, x1 + 12, y2 - 20, Theme.TEXT, false);
-        Draw.roundRect(g, x2 - 16, y2 - 19, x2 - 10, y2 - 13, 3, 0xFF3DFF8A);
+        // Status card
+        int cy1 = py + ph - 40;
+        Draw.roundBox(g, px + 10, cy1, px + SIDE - 10, py + ph - 10, 7, Theme.CARD_BORDER, Theme.CARD);
+        Draw.roundRect(g, px + 17, cy1 + 12, px + 22, cy1 + 17, 2, 0xFF3DFF8A);
+        bold(g, "Vanguard", px + 28, cy1 + 7, Theme.TEXT, 0.9f);
+        small(g, enabledCount() + " modules enabled", px + 28, cy1 + 18, Theme.DIM, 0.72f);
     }
 
-    private void drawHeader(GuiGraphics g) {
+    private boolean navItem(GuiGraphics g, int x, int y, int w, int h, ItemStack icon, String title, String sub,
+                            boolean twoLine, boolean selected, int mx, int my, boolean click) {
         int accent = Theme.accent();
-        int y1 = py + 6;
-        int y2 = py + 32;
-        Draw.roundRect(g, cx1, y1, cx2, y2, 8, Theme.PANEL);
-        String name = mc.player != null ? mc.player.getName().getString() : "player";
-        g.drawString(font, "Hello, " + name, cx1 + 10, y1 + 9, Theme.TEXT, false);
-        String time = LocalTime.now().format(TIME);
-        g.drawString(font, time, (cx1 + cx2) / 2 - font.width(time) / 2 - 30, y1 + 9, accent, false);
-        Draw.roundBox(g, cx2 - 112, y1 + 4, cx2 - 6, y2 - 4, 6, Theme.CARD_BORDER, Theme.CARD);
-        g.fill(cx1 + 6, y2 - 2, cx2 - 6, y2 - 1, accent);
+        boolean hover = Draw.inside(mx, my, x, y, x + w, y + h);
+        if (selected) {
+            Draw.roundRect(g, x, y, x + w, y + h - 2, 6, Draw.alpha(accent, 40));
+            g.fill(x, y + 5, x + 2, y + h - 7, accent);
+        } else if (hover) {
+            Draw.roundRect(g, x, y, x + w, y + h - 2, 6, 0x16FFFFFF);
+        }
+        int boxY = y + (h - 2 - 18) / 2;
+        Draw.roundRect(g, x + 7, boxY, x + 25, boxY + 18, 5, selected ? Draw.alpha(accent, 70) : 0xFF16161F);
+        icon(g, icon, x + 10, boxY + 3);
+        if (twoLine) {
+            g.drawString(font, title, x + 31, y + 4, selected ? Theme.TEXT : 0xFFC9C9D6, false);
+            small(g, sub, x + 31, y + 15, Theme.DIM, 0.7f);
+        } else {
+            g.drawString(font, title, x + 31, y + (h - 2 - 8) / 2, selected ? Theme.TEXT : 0xFFC9C9D6, false);
+        }
+        return hover && click;
     }
 
-    private void drawModules(GuiGraphics g, int mx, int my, boolean click, boolean rclick) {
+    private void drawMain(GuiGraphics g, int mx, int my, boolean click, boolean rclick) {
         int accent = Theme.accent();
-        int gy1 = py + 38;
-        int gy2 = py + ph - 26;
+        int left = px + SIDE + 18;
+        int right = px + pw - 18;
+        boolean searching = !search.getValue().trim().isEmpty();
         List<Module> mods = visible();
 
-        int cw = (cx2 - cx1 - GAP - 6) / 2;
-        int rows = (mods.size() + 1) / 2;
-        int contentH = rows * (CARD_H + GAP);
-        int maxScroll = Math.max(0, contentH - (gy2 - gy1));
+        // Header
+        bold(g, searching ? "Search" : selected.label, left, py + 13, Theme.TEXT, 1.4f);
+        small(g, searching ? mods.size() + " matches" : subtitle(selected), left, py + 31, Theme.DIM, 0.8f);
+
+        // Tabs
+        int tx = left;
+        int ty = py + 46;
+        for (int i = 0; i < TABS.length; i++) {
+            int w = font.width(TABS[i]);
+            boolean active = i == tab;
+            g.drawString(font, TABS[i], tx, ty, active ? Theme.TEXT : Theme.DIM, false);
+            if (active) g.fill(tx - 2, ty + 12, tx + w + 2, ty + 14, accent);
+            if (click && Draw.inside(mx, my, tx - 4, ty - 3, tx + w + 4, ty + 16)) {
+                tab = i;
+                scroll = 0;
+            }
+            tx += w + 18;
+        }
+        String count = mods.size() + " modules";
+        small(g, count, right - smallWidth(count, 0.8f), ty + 1, Theme.DIM, 0.8f);
+        g.fill(px + SIDE + 10, py + 64, px + pw - 10, py + 65, 0xFF14141C);
+
+        // List
+        int ly1 = py + 66;
+        int ly2 = py + ph - 14;
+        int rx1 = px + SIDE + 12;
+        int rx2 = px + pw - 14;
+        int contentH = mods.size() * ROW_H;
+        int maxScroll = Math.max(0, contentH - (ly2 - ly1));
         scroll = Math.max(0, Math.min(maxScroll, scroll));
 
-        // Settings panel geometry (drawn last, but its clicks are handled first)
         int[] panel = null;
         if (settingsFor != null) {
             int rowsN = settingsFor.settings().size();
-            int w = 164;
-            int h = 22 + Math.max(1, rowsN) * 16;
-            int x = cx2 - w - 4;
-            int y = gy2 - h;
+            int w = 176;
+            int h = 24 + Math.max(1, rowsN) * 16;
+            int x = px + pw - 14 - w;
+            int y = Math.max(py + 70, py + ph - 14 - h);
             panel = new int[] {x, y, x + w, y + h};
         }
         boolean overPanel = panel != null && Draw.inside(mx, my, panel[0], panel[1], panel[2], panel[3]);
 
-        Module hovered = null;
-        g.enableScissor(cx1, gy1, cx2, gy2);
+        g.enableScissor(rx1, ly1, rx2 + 4, ly2);
         for (int i = 0; i < mods.size(); i++) {
             Module m = mods.get(i);
-            int x = cx1 + (i % 2) * (cw + GAP);
-            int y = gy1 + (i / 2) * (CARD_H + GAP) - scroll;
-            if (y + CARD_H < gy1 || y > gy2) continue;
+            int y = ly1 + i * ROW_H - scroll;
+            if (y + ROW_H < ly1 || y > ly2) continue;
 
-            boolean hover = !overPanel && Draw.inside(mx, my, x, Math.max(y, gy1), x + cw, Math.min(y + CARD_H, gy2));
-            boolean overKey = hover && Draw.inside(mx, my, x + 6, y + 14, x + cw - 40, y + 26);
+            boolean hover = !overPanel && Draw.inside(mx, my, rx1, Math.max(y, ly1), rx2, Math.min(y + ROW_H, ly2));
             if (hover) {
-                hovered = m;
-                if (click) {
-                    if (overKey) binding = m;
-                    else m.toggle();
-                }
+                Draw.roundRect(g, rx1, y + 1, rx2, y + ROW_H - 2, 7, 0xFF0F0F17);
                 if (rclick) settingsFor = settingsFor == m ? null : m;
             }
+            g.fill(rx1 + 6, y + ROW_H - 1, rx2 - 6, y + ROW_H, 0xFF14141C);
 
+            // Buttons (right side)
+            int b2x = rx2 - 8 - 46;
+            int b1x = b2x - 4 - 46;
             boolean on = m.isEnabled();
-            if (on) {
-                Draw.glow(g, x, y, x + cw, y + CARD_H, 7, accent);
-                Draw.roundBox(g, x, y, x + cw, y + CARD_H, 7, accent, Draw.blend(accent, Theme.CARD, 0.10f));
-            } else {
-                Draw.roundBox(g, x, y, x + cw, y + CARD_H, 7, hover ? 0xFF2C2C38 : Theme.CARD_BORDER, Theme.CARD);
+            if (button(g, b1x, y + 7, 46, 15, on ? "Enabled" : "Enable", on, mx, my, click && !overPanel)) m.toggle();
+            if (button(g, b2x, y + 7, 46, 15, "Settings", false, mx, my, click && !overPanel)) {
+                settingsFor = settingsFor == m ? null : m;
             }
 
-            g.drawString(font, m.name, x + 9, y + 5, Theme.TEXT, false);
-            int iw = x + 9 + font.width(m.name) + 5;
-            Draw.roundRect(g, iw, y + 5, iw + 8, y + 13, 4, Theme.DIM);
-            g.drawString(font, "i", iw + 3, y + 5, Theme.BG, false);
+            // Name and description
+            int textRight = b1x - 8;
+            bold(g, m.name, rx1 + 8, y + 6, Theme.TEXT, 1.0f);
+            String desc = font.plainSubstrByWidth(m.description, (int) ((textRight - (rx1 + 8)) / 0.78f));
+            small(g, desc, rx1 + 8, y + 18, Theme.DIM, 0.78f);
+
+            // Tag chip (category) and key bind
+            String tag = m.category.label.toLowerCase(Locale.ROOT);
+            int cw = smallWidth(tag, 0.7f) + 10;
+            Draw.roundBox(g, rx1 + 8, y + 27, rx1 + 8 + cw, y + 37, 4, Draw.alpha(accent, 110), Draw.alpha(accent, 22));
+            small(g, tag, rx1 + 13, y + 29, accent, 0.7f);
+            String settingsText = m.settings().size() + (m.settings().size() == 1 ? " setting" : " settings");
+            small(g, settingsText, rx1 + 8 + cw + 8, y + 29, Theme.DIM, 0.7f);
 
             String keyText = m.key != null ? m.key.getTranslatedKeyMessage().getString() : "None";
-            if (binding == m) {
-                g.drawString(font, "Press a key... (Del clears)", x + 9, y + 16, accent, false);
-            } else {
-                g.drawString(font, "KeyBind: " + keyText, x + 9, y + 16, overKey ? Theme.TEXT : Theme.DIM, false);
-            }
-
-            // Toggle switch
-            int sx2 = x + cw - 9;
-            int sx1 = sx2 - 24;
-            int sy1 = y + 9;
-            Draw.roundRect(g, sx1, sy1, sx2, sy1 + 11, 5, on ? accent : Theme.OFF);
-            int kx = on ? sx2 - 10 : sx1 + 1;
-            Draw.roundRect(g, kx, sy1 + 1, kx + 9, sy1 + 10, 4, on ? 0xFFFFFFFF : 0xFF7A7A88);
+            String bindText = binding == m ? "Press a key... (Del clears)" : "Bind: " + keyText;
+            int bindW = smallWidth(bindText, 0.75f);
+            int bindX = rx2 - 10 - bindW;
+            boolean overBind = !overPanel && Draw.inside(mx, my, bindX - 3, y + 25, rx2 - 6, y + 38);
+            small(g, bindText, bindX, y + 29, binding == m ? accent : (overBind ? Theme.TEXT : Theme.DIM), 0.75f);
+            if (overBind && click) binding = m;
         }
         g.disableScissor();
 
-        // Scrollbar
         if (maxScroll > 0) {
-            int trackH = gy2 - gy1;
-            int barH = Math.max(16, trackH * trackH / contentH);
-            int barY = gy1 + (trackH - barH) * scroll / maxScroll;
-            Draw.roundRect(g, cx2 - 3, barY, cx2, barY + barH, 1, Draw.alpha(accent, 160));
+            int trackH = ly2 - ly1;
+            int barH = Math.max(14, trackH * trackH / contentH);
+            int barY = ly1 + (trackH - barH) * scroll / maxScroll;
+            Draw.roundRect(g, px + pw - 8, barY, px + pw - 5, barY + barH, 1, Draw.alpha(accent, 150));
         }
 
-        // Footer text
-        String foot = hovered != null ? hovered.description : "Click toggles. Click KeyBind to bind. Right-click for settings.";
-        g.drawString(font, foot, cx1 + 4, py + ph - 17, Theme.DIM, false);
-
+        if (mods.isEmpty()) {
+            String none = "Nothing here";
+            small(g, none, left, ly1 + 14, Theme.DIM, 0.9f);
+        }
         if (panel != null) drawSettings(g, panel, mx, my, click, rclick);
     }
 
     private void drawSettings(GuiGraphics g, int[] p, int mx, int my, boolean click, boolean rclick) {
         int accent = Theme.accent();
         Module m = settingsFor;
-        Draw.glow(g, p[0], p[1], p[2], p[3], 8, accent);
-        Draw.roundBox(g, p[0], p[1], p[2], p[3], 8, accent, 0xFF0A0A0F);
-        g.drawString(font, m.name + " settings", p[0] + 8, p[1] + 6, Theme.TEXT, false);
-        // close button
-        boolean overX = Draw.inside(mx, my, p[2] - 16, p[1] + 4, p[2] - 6, p[1] + 14);
-        g.drawString(font, "x", p[2] - 13, p[1] + 6, overX ? accent : Theme.DIM, false);
+        Draw.glow(g, p[0], p[1], p[2], p[3], 8, 0x000000);
+        Draw.roundBox(g, p[0], p[1], p[2], p[3], 8, Draw.alpha(accent, 150), 0xFF0B0B12);
+        bold(g, m.name + " settings", p[0] + 9, p[1] + 7, Theme.TEXT, 0.95f);
+        boolean overX = Draw.inside(mx, my, p[2] - 18, p[1] + 4, p[2] - 6, p[1] + 16);
+        g.drawString(font, "x", p[2] - 14, p[1] + 7, overX ? accent : Theme.DIM, false);
         if (overX && click) {
             settingsFor = null;
             return;
@@ -324,21 +421,20 @@ public class ClickGui extends Screen {
             settingsFor = null;
             return;
         }
-
         if (m.settings().isEmpty()) {
-            g.drawString(font, "No settings", p[0] + 8, p[1] + 22, Theme.DIM, false);
+            small(g, "No settings", p[0] + 9, p[1] + 26, Theme.DIM, 0.9f);
             return;
         }
-        int y = p[1] + 20;
-        int rx = p[2] - 8;
+        int y = p[1] + 22;
+        int rx = p[2] - 9;
         for (Map.Entry<String, Double> e : new ArrayList<>(m.settings().entrySet())) {
             double val = e.getValue();
-            g.drawString(font, e.getKey(), p[0] + 8, y + 2, Theme.TEXT, false);
+            g.drawString(font, e.getKey(), p[0] + 9, y + 2, 0xFFC9C9D6, false);
 
             boolean overMinus = Draw.inside(mx, my, rx - 62, y, rx - 50, y + 12);
             boolean overPlus = Draw.inside(mx, my, rx - 12, y, rx, y + 12);
-            Draw.roundRect(g, rx - 62, y, rx - 50, y + 12, 3, overMinus ? 0xFF2C2C38 : Theme.CARD_BORDER);
-            Draw.roundRect(g, rx - 12, y, rx, y + 12, 3, overPlus ? 0xFF2C2C38 : Theme.CARD_BORDER);
+            Draw.roundRect(g, rx - 62, y, rx - 50, y + 12, 3, overMinus ? 0xFF2E2E3C : Theme.CARD_BORDER);
+            Draw.roundRect(g, rx - 12, y, rx, y + 12, 3, overPlus ? 0xFF2E2E3C : Theme.CARD_BORDER);
             g.drawString(font, "-", rx - 58, y + 2, Theme.TEXT, false);
             g.drawString(font, "+", rx - 9, y + 2, Theme.TEXT, false);
 
@@ -360,4 +456,3 @@ public class ClickGui extends Screen {
         return v == Math.floor(v) ? String.valueOf((long) v) : String.format(Locale.ROOT, "%.1f", v);
     }
 }
-// END OF FILE

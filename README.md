@@ -30,7 +30,7 @@ Reach only changes what the client allows; many servers reject hits past roughly
 
 ## Notes
 - BaseFinder highlights: chests orange, shulker boxes pink, barrels brown, hoppers grey.
-- Xray highlights ores through walls (it does not make stone see-through).
+- Xray hides every block except ores, storage and base blocks so you see them through the ground (use with Fullbright). It also draws backup ore boxes (`boxes`).
 - SchematicBuilder places block types only, not block state.
 - SwordInspect is a HUD overlay, press I.
 - Settings and friends save to config/vanguard.json; enabled state does not.

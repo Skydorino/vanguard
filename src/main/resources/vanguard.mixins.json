@@ -5,7 +5,8 @@
   "compatibilityLevel": "JAVA_21",
   "client": [
     "ItemInHandRendererMixin",
-    "CameraMixin"
+    "CameraMixin",
+    "BlockMixin"
   ],
   "injectors": {
     "defaultRequire": 0
