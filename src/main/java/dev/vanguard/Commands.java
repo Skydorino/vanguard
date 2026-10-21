@@ -43,6 +43,17 @@ public final class Commands {
                     reply(ctx, "Config saved");
                     return 1;
                 }))
+                .then(literal("off").executes(ctx -> {
+                    ModuleManager.disableAll();
+                    reply(ctx, "All modules off");
+                    return 1;
+                }))
+                .then(literal("hud").executes(ctx -> {
+                    Hud.visible = !Hud.visible;
+                    Config.save();
+                    reply(ctx, Hud.visible ? "HUD shown" : "HUD hidden");
+                    return 1;
+                }))
                 .then(literal("toggle")
                     .then(argument("module", StringArgumentType.word()).suggests(MODULE_NAMES)
                         .executes(Commands::toggle)))

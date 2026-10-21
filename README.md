@@ -23,7 +23,7 @@ what is under your crosshair, at your current reach (normal unless Reach is on).
 Reach only changes what the client allows; many servers reject hits past roughly 3-4 blocks.
 
 ## Commands
-    /vg list | toggle <module> | set <module> <setting> <value> | save
+    /vg list | off | hud | toggle <module> | set <module> <setting> <value> | save
     /vg friend add|remove <name>
     /vg bases [clear]
     /vg schem list | load "<file>" | origin | clear | info
@@ -41,3 +41,7 @@ Reach only changes what the client allows; many servers reject hits past roughly
 
 - ItemLean and SwingAnimations hook the first-person hand renderer by method name. If the game's names differ,
   the hook is skipped (no crash) and the effect simply does not show.
+
+- Disable all: the End key (rebindable), `/vg off`, or the Disable all entry in the menu turns every module off and undoes what each changed.
+
+- HUD: `/vg hud` or the Hide HUD entry in the menu hides the watermark, module list, counters, FPS/ping pills, base info and the on/off notices. Saved in the config.

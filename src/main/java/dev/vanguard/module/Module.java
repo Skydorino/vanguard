@@ -1,5 +1,6 @@
 package dev.vanguard.module;
 
+import dev.vanguard.Hud;
 import dev.vanguard.render.WorldDraw;
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -20,6 +21,7 @@ public abstract class Module {
 
     private boolean enabled;
     private final Map<String, Double> settings = new LinkedHashMap<>();
+    private final Map<String, Double> defaults = new LinkedHashMap<>();
 
     protected Module(String name, Category category, String description) {
         this.name = name;
@@ -30,6 +32,11 @@ public abstract class Module {
     /** Declare a numeric setting. Names are lowercase so commands are easy to type. */
     protected void setting(String settingName, double defaultValue) {
         settings.put(settingName.toLowerCase(Locale.ROOT), defaultValue);
+        defaults.put(settingName.toLowerCase(Locale.ROOT), defaultValue);
+    }
+
+    public double defaultOf(String settingName) {
+        return defaults.getOrDefault(settingName.toLowerCase(Locale.ROOT), 0.0);
     }
 
     public double get(String settingName) {
@@ -55,7 +62,7 @@ public abstract class Module {
         if (value == enabled) return;
         enabled = value;
         if (value) onEnable(); else onDisable();
-        if (mc.player != null) {
+        if (mc.player != null && Hud.visible) {
             mc.player.displayClientMessage(
                 Component.literal("[Vanguard] " + name + (value ? " enabled" : " disabled")), true);
         }

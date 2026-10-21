@@ -35,6 +35,7 @@ public final class Config {
         }
         root.add("settings", mods);
         root.addProperty("theme", Theme.index);
+        root.addProperty("hud", Hud.visible);
         JsonArray friends = new JsonArray();
         for (String f : ModuleManager.friends()) friends.add(f);
         root.add("friends", friends);
@@ -50,6 +51,7 @@ public final class Config {
         if (!Files.exists(file)) return;
         try {
             JsonObject root = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
+            if (root.has("hud")) Hud.visible = root.get("hud").getAsBoolean();
             if (root.has("theme")) Theme.index = Math.floorMod(root.get("theme").getAsInt(), Theme.ACCENTS.length);
             if (root.has("friends")) {
                 for (JsonElement f : root.getAsJsonArray("friends")) ModuleManager.addFriend(f.getAsString());

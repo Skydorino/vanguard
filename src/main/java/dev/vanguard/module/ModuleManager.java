@@ -77,12 +77,15 @@ public final class ModuleManager {
     private static final List<Module> MODULES = new ArrayList<>();
     private static final Set<String> FRIENDS = new HashSet<>();
     private static KeyMapping guiKey;
+    private static KeyMapping offKey;
 
     private ModuleManager() {}
 
     public static void init() {
         guiKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
             "key.vanguard.gui", InputConstants.Type.KEYSYM, InputConstants.KEY_RSHIFT, CATEGORY));
+        offKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+            "key.vanguard.disableall", InputConstants.Type.KEYSYM, InputConstants.KEY_END, CATEGORY));
         SwordInspect.registerKey();
 
         add(new AutoHitCrystal());
@@ -165,6 +168,7 @@ public final class ModuleManager {
         for (Module m : MODULES) {
             while (m.key.consumeClick()) m.toggle();
         }
+        while (offKey.consumeClick()) disableAll();
         while (guiKey.consumeClick()) {
             if (mc.screen == null && mc.player != null) mc.setScreen(new ClickGui());
         }
@@ -173,6 +177,13 @@ public final class ModuleManager {
         if (player == null || level == null) return;
         for (Module m : MODULES) {
             if (m.isEnabled()) m.onTick(player, level);
+        }
+    }
+
+    /** Turns every module off, which also undoes whatever each one changed (camera, chunks, options). */
+    public static void disableAll() {
+        for (Module m : MODULES) {
+            if (m.isEnabled()) m.setEnabled(false);
         }
     }
 

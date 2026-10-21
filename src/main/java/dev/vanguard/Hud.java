@@ -23,6 +23,9 @@ import net.minecraft.world.item.Items;
 /** In-game overlay: black rounded pills with an accent edge. */
 public final class Hud {
     private static final int PILL = 0xD0000000;
+
+    /** False hides the watermark, module list, counters, FPS/ping and base info. Saved in the config. */
+    public static boolean visible = true;
     private static int frames;
     private static int fps;
     private static long fpsStamp;
@@ -46,6 +49,10 @@ public final class Hud {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (player == null || mc.options.hideGui) return;
+        if (!visible) {
+            SwordInspect.render(g, mc); // still shows if you trigger it yourself
+            return;
+        }
         Font font = mc.font;
         int accent = Theme.accent();
 
