@@ -11,7 +11,8 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * Paints a slowly drifting galaxy over the Overworld sky. It is drawn behind terrain (terrain
- * hides it), but it covers the vanilla sun, moon and stars.
+ * hides it), but it covers the vanilla sun, moon and stars. The shape is built once and the
+ * colours are refreshed a few times a second, so the per-frame cost is only emitting the quads.
  */
 public class Galaxy extends Module {
     private static final int STARS = 360;
@@ -19,22 +20,43 @@ public class Galaxy extends Module {
     private static final int LON = 48;
     private static final int LAT = 24;
 
-    private final double[][] stars = new double[STARS][4]; // x, y, z, twinkle phase
+    private final double[][] stars = new double[STARS][4];   // x, y, z, twinkle phase
+    private final Vec3[][] offsets = new Vec3[LON + 1][LAT + 1];  // sphere points relative to the camera
+    private final int[][] colors = new int[LON + 1][LAT + 1];
+    private final Vec3[] starCenters = new Vec3[STARS];
+    private final Vec3[] starU = new Vec3[STARS];
+    private final Vec3[] starV = new Vec3[STARS];
+    private final Vec3[][] frame = new Vec3[LON + 1][LAT + 1];
+    private long colorStamp;
 
     public Galaxy() {
         super("Galaxy", Category.VISUALS, "Replaces the sky with a drifting galaxy");
         setting("palette", 0);   // 0 purple/blue, 1 pink/orange, 2 green/teal, 3 rainbow
         setting("speed", 1.0);
 
+        for (int i = 0; i <= LON; i++) {
+            double lon = Math.PI * 2.0 * i / LON;
+            for (int j = 0; j <= LAT; j++) {
+                double lat = -Math.PI / 2.0 + Math.PI * j / LAT;
+                offsets[i][j] = dir(lon, lat).scale(RADIUS);
+            }
+        }
+
         Random rnd = new Random(1337);
-        for (double[] s : stars) {
+        for (int s = 0; s < STARS; s++) {
             double z = rnd.nextDouble() * 2.0 - 1.0;
             double a = rnd.nextDouble() * Math.PI * 2.0;
             double r = Math.sqrt(1.0 - z * z);
-            s[0] = r * Math.cos(a);
-            s[1] = z;
-            s[2] = r * Math.sin(a);
-            s[3] = rnd.nextDouble() * Math.PI * 2.0;
+            stars[s][0] = r * Math.cos(a);
+            stars[s][1] = z;
+            stars[s][2] = r * Math.sin(a);
+            stars[s][3] = rnd.nextDouble() * Math.PI * 2.0;
+
+            Vec3 d = new Vec3(stars[s][0], stars[s][1], stars[s][2]);
+            Vec3 u = d.cross(Math.abs(d.y) > 0.95 ? new Vec3(1, 0, 0) : new Vec3(0, 1, 0)).normalize();
+            starCenters[s] = d.scale(RADIUS - 1.0);
+            starU[s] = u.scale(0.9);
+            starV[s] = d.cross(u).scale(0.9);
         }
     }
 
@@ -42,8 +64,12 @@ public class Galaxy extends Module {
         return Math.max(0.0, Math.min(1.0, v));
     }
 
-    private int color(double x, double y, double z, double t) {
-        int palette = (int) get("palette");
+    private static Vec3 dir(double lon, double lat) {
+        double cl = Math.cos(lat);
+        return new Vec3(cl * Math.cos(lon), Math.sin(lat), cl * Math.sin(lon));
+    }
+
+    private static int color(double x, double y, double z, double t, int palette) {
         double n = clamp01(0.5 + 0.5 * Math.sin(x * 2.3 + t * 3.0) * Math.cos(y * 3.1 - t * 2.0) + 0.35 * Math.sin(z * 4.0 + x * 1.7 + t));
         double m = clamp01(0.5 + 0.5 * Math.sin(x * 5.0 - z * 3.0 + t * 2.0));
         double band = Math.exp(-Math.pow(y * 2.0 + 0.15 * Math.sin(x * 3.0 + t), 2.0)); // bright galactic band
@@ -65,42 +91,42 @@ public class Galaxy extends Module {
         return Draw.blend(nebula, dark | 0xFF000000, (float) strength);
     }
 
-    private Vec3 dir(double lon, double lat) {
-        double cl = Math.cos(lat);
-        return new Vec3(cl * Math.cos(lon), Math.sin(lat), cl * Math.sin(lon));
-    }
-
     @Override
     public void onWorldRender(WorldDraw draw) {
         if (mc.level == null || mc.level.dimension() != Level.OVERWORLD) return;
-        double t = System.currentTimeMillis() / 1000.0 * get("speed") * 0.05;
+        long nowMs = System.currentTimeMillis();
 
-        for (int i = 0; i < LON; i++) {
-            double l0 = Math.PI * 2.0 * i / LON;
-            double l1 = Math.PI * 2.0 * (i + 1) / LON;
-            for (int j = 0; j < LAT; j++) {
-                double a0 = -Math.PI / 2.0 + Math.PI * j / LAT;
-                double a1 = -Math.PI / 2.0 + Math.PI * (j + 1) / LAT;
-                Vec3 d00 = dir(l0, a0), d10 = dir(l1, a0), d11 = dir(l1, a1), d01 = dir(l0, a1);
-                draw.skyQuad(
-                    draw.cam.add(d00.scale(RADIUS)), draw.cam.add(d10.scale(RADIUS)),
-                    draw.cam.add(d11.scale(RADIUS)), draw.cam.add(d01.scale(RADIUS)),
-                    color(d00.x, d00.y, d00.z, t), color(d10.x, d10.y, d10.z, t),
-                    color(d11.x, d11.y, d11.z, t), color(d01.x, d01.y, d01.z, t));
+        // Colours drift slowly, so refresh them about ten times a second
+        if (nowMs - colorStamp >= 100) {
+            colorStamp = nowMs;
+            double t = nowMs / 1000.0 * get("speed") * 0.05;
+            int palette = (int) get("palette");
+            for (int i = 0; i <= LON; i++) {
+                for (int j = 0; j <= LAT; j++) {
+                    Vec3 o = offsets[i][j];
+                    colors[i][j] = color(o.x / RADIUS, o.y / RADIUS, o.z / RADIUS, t, palette);
+                }
             }
         }
 
-        double now = System.currentTimeMillis() / 1000.0;
-        for (double[] s : stars) {
-            Vec3 d = new Vec3(s[0], s[1], s[2]);
-            Vec3 u = d.cross(Math.abs(d.y) > 0.95 ? new Vec3(1, 0, 0) : new Vec3(0, 1, 0)).normalize();
-            Vec3 v = d.cross(u);
-            double size = 0.9;
-            Vec3 c = draw.cam.add(d.scale(RADIUS - 1.0));
-            int alpha = (int) (170 + 85 * Math.sin(now * 1.7 + s[3]));
+        for (int i = 0; i <= LON; i++) {
+            for (int j = 0; j <= LAT; j++) frame[i][j] = draw.cam.add(offsets[i][j]);
+        }
+        for (int i = 0; i < LON; i++) {
+            for (int j = 0; j < LAT; j++) {
+                draw.skyQuad(frame[i][j], frame[i + 1][j], frame[i + 1][j + 1], frame[i][j + 1],
+                    colors[i][j], colors[i + 1][j], colors[i + 1][j + 1], colors[i][j + 1]);
+            }
+        }
+
+        double now = nowMs / 1000.0;
+        for (int s = 0; s < STARS; s++) {
+            Vec3 c = draw.cam.add(starCenters[s]);
+            Vec3 u = starU[s];
+            Vec3 v = starV[s];
+            int alpha = (int) (170 + 85 * Math.sin(now * 1.7 + stars[s][3]));
             int col = Draw.alpha(0xFFFFFF, alpha);
-            draw.skyQuad(c.add(u.scale(size)).add(v.scale(size)), c.subtract(u.scale(size)).add(v.scale(size)),
-                c.subtract(u.scale(size)).subtract(v.scale(size)), c.add(u.scale(size)).subtract(v.scale(size)),
+            draw.skyQuad(c.add(u).add(v), c.subtract(u).add(v), c.subtract(u).subtract(v), c.add(u).subtract(v),
                 col, col, col, col);
         }
     }

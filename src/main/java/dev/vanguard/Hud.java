@@ -6,6 +6,7 @@ import dev.vanguard.module.Module;
 import dev.vanguard.module.ModuleManager;
 import dev.vanguard.module.impl.BaseFinder;
 import dev.vanguard.module.impl.SwordInspect;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
@@ -20,15 +21,31 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-/** In-game overlay: black rounded pills with an accent edge. */
+/**
+ * In-game overlay: black pills with an accent edge. The lists, counts and strings are rebuilt a
+ * few times a second rather than every frame, so drawing the HUD stays cheap.
+ */
 public final class Hud {
     private static final int PILL = 0xD0000000;
 
     /** False hides the watermark, module list, counters, FPS/ping and base info. Saved in the config. */
     public static boolean visible = true;
+
     private static int frames;
     private static int fps;
     private static long fpsStamp;
+    private static long cacheStamp;
+
+    // Rebuilt every ~50 ms
+    private static final List<Module> ACTIVE = new ArrayList<>();
+    private static final List<String> LABELS = new ArrayList<>();
+    private static final List<Integer> WIDTHS = new ArrayList<>();
+    private static String fpsText;
+    private static String pingText;
+    private static String countsText = "";
+    private static int countsWidth;
+    private static String baseText;
+    private static int baseWidth;
 
     private Hud() {}
 
@@ -40,9 +57,59 @@ public final class Hud {
     }
 
     private static void infoPill(GuiGraphics g, Font font, String text, int y, int accent) {
-        Draw.roundRect(g, 4, y, font.width(text) + 16, y + font.lineHeight + 6, 5, PILL);
+        Draw.pill(g, 4, y, font.width(text) + 16, y + font.lineHeight + 6, PILL);
         g.fill(5, y + 3, 7, y + font.lineHeight + 3, accent);
         g.drawString(font, text, 12, y + 3, 0xFFFFFFFF, false);
+    }
+
+    private static void rebuild(Minecraft mc, LocalPlayer player, Font font) {
+        ACTIVE.clear();
+        for (Module m : ModuleManager.all()) {
+            if (m.isEnabled()) ACTIVE.add(m);
+        }
+        ACTIVE.sort(Comparator.comparingInt((Module m) -> -font.width(m.hudLabel())));
+        LABELS.clear();
+        WIDTHS.clear();
+        for (Module m : ACTIVE) {
+            String label = m.hudLabel();
+            LABELS.add(label);
+            WIDTHS.add(font.width(label));
+        }
+
+        Module fpsModule = ModuleManager.find("FpsDisplay");
+        fpsText = fpsModule != null && fpsModule.isEnabled() ? "FPS " + fps : null;
+        Module pingModule = ModuleManager.find("PingDisplay");
+        if (pingModule != null && pingModule.isEnabled()) {
+            PlayerInfo info = mc.getConnection() != null ? mc.getConnection().getPlayerInfo(player.getUUID()) : null;
+            pingText = info != null ? "Ping " + info.getLatency() + " ms" : "Ping --";
+        } else {
+            pingText = null;
+        }
+
+        int totems = 0;
+        int crystals = 0;
+        ItemStack off = player.getOffhandItem();
+        if (off.is(Items.TOTEM_OF_UNDYING)) totems += off.getCount();
+        if (off.is(Items.END_CRYSTAL)) crystals += off.getCount();
+        for (int i = 0; i < 36; i++) {
+            ItemStack stack = player.getInventory().getItem(i);
+            if (stack.is(Items.TOTEM_OF_UNDYING)) totems += stack.getCount();
+            else if (stack.is(Items.END_CRYSTAL)) crystals += stack.getCount();
+        }
+        countsText = "Totems " + totems + "   Crystals " + crystals;
+        countsWidth = font.width(countsText);
+
+        baseText = null;
+        Module bf = ModuleManager.find("BaseFinder");
+        if (bf instanceof BaseFinder finder && finder.isEnabled()) {
+            BaseFinder.Hit h = finder.nearest(player);
+            if (h != null) {
+                double dx = h.x() - player.getX();
+                double dz = h.z() - player.getZ();
+                baseText = "Base " + h.x() + ", " + h.z() + "  (" + (int) Math.sqrt(dx * dx + dz * dz) + "m)";
+                baseWidth = font.width(baseText);
+            }
+        }
     }
 
     private static void render(GuiGraphics g, DeltaTracker tickCounter) {
@@ -56,80 +123,54 @@ public final class Hud {
         Font font = mc.font;
         int accent = Theme.accent();
 
-        // Watermark
-        String mark = "VANGUARD";
-        int mw = font.width(mark);
-        Draw.roundRect(g, 4, 4, mw + 18, 18, 5, PILL);
-        g.fill(5, 7, 7, 15, accent);
-        g.drawString(font, mark, 12, 7, 0xFFFFFFFF, false);
-
-        // FPS and ping pills under the watermark
-        frames++;
         long nowMs = System.currentTimeMillis();
+        frames++;
         if (nowMs - fpsStamp >= 1000) {
             fps = frames;
             frames = 0;
             fpsStamp = nowMs;
         }
-        int infoY = 22;
-        Module fpsModule = ModuleManager.find("FpsDisplay");
-        if (fpsModule != null && fpsModule.isEnabled()) {
-            infoPill(g, font, "FPS " + fps, infoY, accent);
-            infoY += font.lineHeight + 8;
-        }
-        Module pingModule = ModuleManager.find("PingDisplay");
-        if (pingModule != null && pingModule.isEnabled()) {
-            PlayerInfo info = mc.getConnection() != null ? mc.getConnection().getPlayerInfo(player.getUUID()) : null;
-            infoPill(g, font, info != null ? "Ping " + info.getLatency() + " ms" : "Ping --", infoY, accent);
+        if (nowMs - cacheStamp >= 50) {
+            cacheStamp = nowMs;
+            rebuild(mc, player, font);
         }
 
+        // Watermark
+        Draw.pill(g, 4, 4, font.width("VANGUARD") + 18, 18, PILL);
+        g.fill(5, 7, 7, 15, accent);
+        g.drawString(font, "VANGUARD", 12, 7, 0xFFFFFFFF, false);
+
+        // FPS and ping pills under the watermark
+        int infoY = 22;
+        if (fpsText != null) {
+            infoPill(g, font, fpsText, infoY, accent);
+            infoY += font.lineHeight + 8;
+        }
+        if (pingText != null) infoPill(g, font, pingText, infoY, accent);
+
         // Enabled modules, right-aligned, longest first
-        List<Module> active = ModuleManager.all().stream()
-            .filter(Module::isEnabled)
-            .sorted(Comparator.comparingInt((Module m) -> -font.width(m.hudLabel())))
-            .toList();
         int y = 4;
-        for (Module m : active) {
-            String label = m.hudLabel();
-            int w = font.width(label);
-            int x2 = g.guiWidth() - 4;
-            int x1 = x2 - w - 12;
-            Draw.roundRect(g, x1, y, x2, y + font.lineHeight + 4, 4, PILL);
+        int x2 = g.guiWidth() - 4;
+        for (int i = 0; i < ACTIVE.size(); i++) {
+            int x1 = x2 - WIDTHS.get(i) - 12;
+            Draw.pill(g, x1, y, x2, y + font.lineHeight + 4, PILL);
             g.fill(x2 - 3, y + 2, x2 - 1, y + font.lineHeight + 2, accent);
-            g.drawString(font, label, x1 + 5, y + 3, 0xFFFFFFFF, false);
+            g.drawString(font, LABELS.get(i), x1 + 5, y + 3, 0xFFFFFFFF, false);
             y += font.lineHeight + 6;
         }
 
         // Totem and crystal counts, bottom-left
-        int totems = 0;
-        int crystals = 0;
-        ItemStack off = player.getOffhandItem();
-        if (off.is(Items.TOTEM_OF_UNDYING)) totems += off.getCount();
-        if (off.is(Items.END_CRYSTAL)) crystals += off.getCount();
-        for (int i = 0; i < 36; i++) {
-            ItemStack stack = player.getInventory().getItem(i);
-            if (stack.is(Items.TOTEM_OF_UNDYING)) totems += stack.getCount();
-            else if (stack.is(Items.END_CRYSTAL)) crystals += stack.getCount();
-        }
-        String counts = "Totems " + totems + "   Crystals " + crystals;
         int by = g.guiHeight() - font.lineHeight - 10;
-        Draw.roundRect(g, 4, by, font.width(counts) + 16, by + font.lineHeight + 6, 5, PILL);
+        Draw.pill(g, 4, by, countsWidth + 16, by + font.lineHeight + 6, PILL);
         g.fill(5, by + 3, 7, by + font.lineHeight + 3, accent);
-        g.drawString(font, counts, 12, by + 3, 0xFFFFFFFF, false);
+        g.drawString(font, countsText, 12, by + 3, 0xFFFFFFFF, false);
 
         // Nearest flagged base
-        Module bf = ModuleManager.find("BaseFinder");
-        if (bf instanceof BaseFinder finder && finder.isEnabled()) {
-            BaseFinder.Hit h = finder.nearest(player);
-            if (h != null) {
-                double dx = h.x() - player.getX();
-                double dz = h.z() - player.getZ();
-                String text = "Base " + h.x() + ", " + h.z() + "  (" + (int) Math.sqrt(dx * dx + dz * dz) + "m)";
-                int ty = by - font.lineHeight - 10;
-                Draw.roundRect(g, 4, ty, font.width(text) + 16, ty + font.lineHeight + 6, 5, PILL);
-                g.fill(5, ty + 3, 7, ty + font.lineHeight + 3, accent);
-                g.drawString(font, text, 12, ty + 3, 0xFFFFFFFF, false);
-            }
+        if (baseText != null) {
+            int ty = by - font.lineHeight - 10;
+            Draw.pill(g, 4, ty, baseWidth + 16, ty + font.lineHeight + 6, PILL);
+            g.fill(5, ty + 3, 7, ty + font.lineHeight + 3, accent);
+            g.drawString(font, baseText, 12, ty + 3, 0xFFFFFFFF, false);
         }
 
         SwordInspect.render(g, mc);

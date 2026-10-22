@@ -56,9 +56,11 @@ import dev.vanguard.module.impl.TunnelESP;
 import dev.vanguard.module.impl.Xray;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -76,6 +78,7 @@ public final class ModuleManager {
 
     private static final List<Module> MODULES = new ArrayList<>();
     private static final Set<String> FRIENDS = new HashSet<>();
+    private static final Map<String, Module> BY_NAME = new HashMap<>();
     private static KeyMapping guiKey;
     private static KeyMapping offKey;
 
@@ -153,6 +156,7 @@ public final class ModuleManager {
             InputConstants.UNKNOWN.getValue(),
             CATEGORY));
         MODULES.add(module);
+        BY_NAME.put(module.name, module);
     }
 
     private static void preTick(Minecraft mc) {
@@ -198,6 +202,8 @@ public final class ModuleManager {
     }
 
     public static Module find(String name) {
+        Module exact = BY_NAME.get(name); // fast path: callers use the exact module name
+        if (exact != null) return exact;
         for (Module m : MODULES) {
             if (m.name.equalsIgnoreCase(name)) return m;
         }

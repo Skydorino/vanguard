@@ -38,8 +38,9 @@ public class Freelook extends Module {
 
     /** Freelook yields to Freecam, which has its own camera. */
     public static boolean active() {
+        if (!active) return false;
         Module freecam = ModuleManager.find("Freecam");
-        return active && (freecam == null || !freecam.isEnabled());
+        return freecam == null || !freecam.isEnabled();
     }
 
     public static float yaw() {

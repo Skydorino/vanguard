@@ -32,6 +32,13 @@ public final class Draw {
         }
     }
 
+    /** Small rounded-corner box drawn with three fills; much cheaper than roundRect for HUD pills. */
+    public static void pill(GuiGraphics g, int x1, int y1, int x2, int y2, int color) {
+        g.fill(x1 + 1, y1, x2 - 1, y2, color);
+        g.fill(x1, y1 + 1, x1 + 1, y2 - 1, color);
+        g.fill(x2 - 1, y1 + 1, x2, y2 - 1, color);
+    }
+
     /** Filled rounded rect with a 1px rounded border. */
     public static void roundBox(GuiGraphics g, int x1, int y1, int x2, int y2, int r, int border, int fill) {
         roundRect(g, x1, y1, x2, y2, r, border);

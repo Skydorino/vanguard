@@ -21,8 +21,6 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 
 /**
  * Column menu: one rounded panel per category, each listing its modules. Left-click a module to
@@ -57,11 +55,6 @@ public class ClickGui extends Screen {
     private Module hoverSettingModule;
     private String hoverSettingKey;
     private String hoverText;
-
-    private final ItemStack[] icons = {
-        new ItemStack(Items.DIAMOND_SWORD), new ItemStack(Items.FEATHER), new ItemStack(Items.COMPASS),
-        new ItemStack(Items.ENDER_EYE), new ItemStack(Items.REDSTONE)
-    };
 
     public ClickGui() {
         super(Component.literal("Vanguard"));
@@ -162,14 +155,6 @@ public class ClickGui extends Screen {
         return (int) (font.width(text) * scale);
     }
 
-    private void icon(GuiGraphics g, ItemStack stack, int x, int y) {
-        g.pose().pushMatrix();
-        g.pose().translate((float) x, (float) y);
-        g.pose().scale(0.7f, 0.7f);
-        g.renderItem(stack, 0, 0);
-        g.pose().popMatrix();
-    }
-
     private List<Module> modulesOf(Category cat) {
         String q = search.getValue().trim().toLowerCase(Locale.ROOT);
         List<Module> out = new ArrayList<>();
@@ -247,7 +232,7 @@ public class ClickGui extends Screen {
         Draw.roundRect(g, x + 1, top + 1, x + colW - 1, top + HEADER, 7, 0xFF0D0D15);
         int titleW = font.width(cat.label);
         int startX = x + (colW - (11 + 4 + titleW)) / 2;
-        icon(g, icons[i], startX, top + 5);
+        Icons.draw(g, i, startX, top + 4, accent);
         g.drawString(font, Component.literal(cat.label).withStyle(ChatFormatting.BOLD), startX + 15, top + 6, Theme.TEXT, false);
         g.fill(x + 8, top + HEADER, x + colW - 8, top + HEADER + 1, Draw.alpha(accent, 70));
 
