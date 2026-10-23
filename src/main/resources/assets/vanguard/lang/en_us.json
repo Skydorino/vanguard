@@ -52,5 +52,7 @@
   "key.vanguard.wallhit": "Toggle WallHit",
   "key.vanguard.freelook": "Toggle Freelook",
   "key.vanguard.instantcrystal": "Toggle InstantCrystal",
-  "key.vanguard.disableall": "Disable All Modules"
+  "key.vanguard.disableall": "Disable All Modules",
+  "key.vanguard.suschunks": "Toggle SusChunks",
+  "key.vanguard.elytrakit": "Toggle ElytraKit"
 }

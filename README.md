@@ -13,8 +13,8 @@ for 1.21.11 in your mods folder. Local build: JDK 21 + Gradle 9.2+, `gradle buil
 Combat: AutoHitCrystal, InstantCrystal, CrystalOptimizer, AnchorMacro, SafeAnchor, AutoCart, CartRefill, AutoTotem,
         AutoRefill, AutoXP, AutoDrain, TriggerBot, AutoShieldBreak, AutoStunSlam, AutoMace,
         InstantLunge, AutoTap, JumpReset, Reach, WallHit, AutoTrap
-Movement: Sprint, AutoWalk, Flight, Boatfly, AirWalk, AutoMLG, AutoPearlCatch, Freecam, Orbit
-World: BaseFinder, SchematicBuilder, Xray, TunnelESP, AmethystNotifier
+Movement: ElytraKit, Sprint, AutoWalk, Flight, Boatfly, AirWalk, AutoMLG, AutoPearlCatch, Freecam, Orbit
+World: BaseFinder, SusChunks, SchematicBuilder, Xray, TunnelESP, AmethystNotifier
 Visuals: Fullbright, Galaxy, Freelook, SwordInspect, ItemLean, SwingAnimations, PlayerESP, Tracers, JumpCircles, RangeRing, FpsDisplay, PingDisplay
 Misc: AutoMine, PerformanceMode, FastUse
 
@@ -25,7 +25,7 @@ Reach only changes what the client allows; many servers reject hits past roughly
 ## Commands
     /vg list | off | hud | toggle <module> | set <module> <setting> <value> | save
     /vg friend add|remove <name>
-    /vg bases [clear]
+    /vg bases [clear] | sus [clear]
     /vg schem list | load "<file>" | origin | clear | info
 
 ## Notes
@@ -45,3 +45,6 @@ Reach only changes what the client allows; many servers reject hits past roughly
 - Disable all: the End key (rebindable), `/vg off`, or the Disable all entry in the menu turns every module off and undoes what each changed.
 
 - HUD: `/vg hud` or the Hide HUD entry in the menu hides the watermark, module list, counters, FPS/ping pills, base info and the on/off notices. Saved in the config.
+
+- SusChunks scores chunks by rarely-natural blocks (redstone parts, concrete, glass, obsidian, metal blocks...). Raise minscore for fewer false hits.
+- ElytraKit is singleplayer only: it gives you a real elytra and fireworks on the built-in server.

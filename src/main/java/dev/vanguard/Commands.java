@@ -11,6 +11,7 @@ import dev.vanguard.module.Module;
 import dev.vanguard.module.ModuleManager;
 import dev.vanguard.module.impl.BaseFinder;
 import dev.vanguard.module.impl.SchematicBuilder;
+import dev.vanguard.module.impl.SusChunks;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -86,6 +87,13 @@ public final class Commands {
                         reply(ctx, builder().status());
                         return 1;
                     })))
+                .then(literal("sus")
+                    .executes(Commands::susList)
+                    .then(literal("clear").executes(ctx -> {
+                        sus().clear();
+                        reply(ctx, "Cleared flagged chunks");
+                        return 1;
+                    })))
                 .then(literal("bases")
                     .executes(Commands::bases)
                     .then(literal("clear").executes(ctx -> {
@@ -101,6 +109,19 @@ public final class Commands {
 
     private static BaseFinder finder() {
         return (BaseFinder) ModuleManager.find("BaseFinder");
+    }
+
+    private static SusChunks sus() {
+        return (SusChunks) ModuleManager.find("SusChunks");
+    }
+
+    private static int susList(CommandContext<FabricClientCommandSource> ctx) {
+        List<SusChunks.Sus> hits = sus().hits();
+        if (hits.isEmpty()) reply(ctx, "No sus chunks yet (enable SusChunks and explore)");
+        for (SusChunks.Sus h : hits) {
+            reply(ctx, h.x() + ", " + h.y() + ", " + h.z() + "  (score " + h.score() + ")");
+        }
+        return 1;
     }
 
     private static Path schemDir() {

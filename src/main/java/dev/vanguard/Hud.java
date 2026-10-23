@@ -5,6 +5,7 @@ import dev.vanguard.gui.Theme;
 import dev.vanguard.module.Module;
 import dev.vanguard.module.ModuleManager;
 import dev.vanguard.module.impl.BaseFinder;
+import dev.vanguard.module.impl.SusChunks;
 import dev.vanguard.module.impl.SwordInspect;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -46,6 +47,8 @@ public final class Hud {
     private static int countsWidth;
     private static String baseText;
     private static int baseWidth;
+    private static String susText;
+    private static int susWidth;
 
     private Hud() {}
 
@@ -110,6 +113,18 @@ public final class Hud {
                 baseWidth = font.width(baseText);
             }
         }
+
+        susText = null;
+        Module sc = ModuleManager.find("SusChunks");
+        if (sc instanceof SusChunks sus && sus.isEnabled()) {
+            SusChunks.Sus s = sus.nearest(player);
+            if (s != null) {
+                double dx = s.x() - player.getX();
+                double dz = s.z() - player.getZ();
+                susText = "Sus chunk " + s.x() + ", " + s.z() + "  (" + (int) Math.sqrt(dx * dx + dz * dz) + "m)";
+                susWidth = font.width(susText);
+            }
+        }
     }
 
     private static void render(GuiGraphics g, DeltaTracker tickCounter) {
@@ -165,12 +180,18 @@ public final class Hud {
         g.fill(5, by + 3, 7, by + font.lineHeight + 3, accent);
         g.drawString(font, countsText, 12, by + 3, 0xFFFFFFFF, false);
 
-        // Nearest flagged base
+        // Nearest flagged base and sus chunk
+        int ty = by - font.lineHeight - 10;
         if (baseText != null) {
-            int ty = by - font.lineHeight - 10;
             Draw.pill(g, 4, ty, baseWidth + 16, ty + font.lineHeight + 6, PILL);
             g.fill(5, ty + 3, 7, ty + font.lineHeight + 3, accent);
             g.drawString(font, baseText, 12, ty + 3, 0xFFFFFFFF, false);
+            ty -= font.lineHeight + 8;
+        }
+        if (susText != null) {
+            Draw.pill(g, 4, ty, susWidth + 16, ty + font.lineHeight + 6, PILL);
+            g.fill(5, ty + 3, 7, ty + font.lineHeight + 3, accent);
+            g.drawString(font, susText, 12, ty + 3, 0xFFFFFFFF, false);
         }
 
         SwordInspect.render(g, mc);
