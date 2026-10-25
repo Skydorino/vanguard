@@ -17,12 +17,17 @@ import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.world.level.block.state.BlockState;
 
-/** Reads Litematica (.litematic) and vanilla structure (.nbt) files into a flat block list. */
+/**
+ * Reads Litematica (.litematic) and vanilla structure (.nbt) files into a flat block list.
+ * Coordinates are kept exactly as Litematica stores them, so a Litematica placement origin lines
+ * up. "min" is the lowest corner of the schematic's regions, for anchoring at your feet instead.
+ */
 public final class Schematic {
     public record Entry(BlockPos rel, BlockState state) {}
 
     public final String name;
     public final List<Entry> entries = new ArrayList<>();
+    public BlockPos min = BlockPos.ZERO;
 
     private Schematic(String name) {
         this.name = name;
@@ -39,7 +44,10 @@ public final class Schematic {
         if (lower.endsWith(".litematic")) s.readLitematic(root);
         else if (lower.endsWith(".nbt")) s.readStructure(root);
         else throw new IOException("Unsupported file type, use .litematic or .nbt");
-        s.normalizeAndSort();
+        if (s.entries.isEmpty()) throw new IOException("No blocks found in " + fileName);
+        s.entries.sort(Comparator.<Entry>comparingInt(e -> e.rel().getY())
+            .thenComparingInt(e -> e.rel().getX())
+            .thenComparingInt(e -> e.rel().getZ()));
         return s;
     }
 
@@ -66,6 +74,9 @@ public final class Schematic {
     }
 
     private void readLitematic(CompoundTag root) {
+        int minX = Integer.MAX_VALUE;
+        int minY = Integer.MAX_VALUE;
+        int minZ = Integer.MAX_VALUE;
         CompoundTag regions = root.getCompoundOrEmpty("Regions");
         for (String key : regions.keySet()) {
             CompoundTag region = regions.getCompoundOrEmpty(key);
@@ -78,6 +89,9 @@ public final class Schematic {
             int bx = pos.getIntOr("x", 0) + (rx < 0 ? rx + 1 : 0);
             int by = pos.getIntOr("y", 0) + (ry < 0 ? ry + 1 : 0);
             int bz = pos.getIntOr("z", 0) + (rz < 0 ? rz + 1 : 0);
+            minX = Math.min(minX, bx);
+            minY = Math.min(minY, by);
+            minZ = Math.min(minZ, bz);
 
             List<BlockState> palette = readPalette(region.getListOrEmpty("BlockStatePalette"));
             long[] states = region.getLongArray("BlockStates").orElse(new long[0]);
@@ -105,23 +119,6 @@ public final class Schematic {
                 }
             }
         }
-    }
-
-    /** Shift so the minimum corner is (0,0,0), then order bottom-up so supports go down first. */
-    private void normalizeAndSort() {
-        if (entries.isEmpty()) return;
-        int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
-        for (Entry e : entries) {
-            minX = Math.min(minX, e.rel().getX());
-            minY = Math.min(minY, e.rel().getY());
-            minZ = Math.min(minZ, e.rel().getZ());
-        }
-        for (int i = 0; i < entries.size(); i++) {
-            Entry e = entries.get(i);
-            entries.set(i, new Entry(e.rel().offset(-minX, -minY, -minZ), e.state()));
-        }
-        entries.sort(Comparator.<Entry>comparingInt(e -> e.rel().getY())
-            .thenComparingInt(e -> e.rel().getX())
-            .thenComparingInt(e -> e.rel().getZ()));
+        if (minX != Integer.MAX_VALUE) min = new BlockPos(minX, minY, minZ);
     }
 }

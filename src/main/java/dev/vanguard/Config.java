@@ -9,6 +9,7 @@ import com.google.gson.JsonParser;
 import dev.vanguard.gui.Theme;
 import dev.vanguard.module.Module;
 import dev.vanguard.module.ModuleManager;
+import dev.vanguard.module.impl.AutoSell;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,6 +37,7 @@ public final class Config {
         root.add("settings", mods);
         root.addProperty("theme", Theme.index);
         root.addProperty("hud", Hud.visible);
+        root.addProperty("autosell", AutoSell.command);
         JsonArray friends = new JsonArray();
         for (String f : ModuleManager.friends()) friends.add(f);
         root.add("friends", friends);
@@ -52,6 +54,7 @@ public final class Config {
         try {
             JsonObject root = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
             if (root.has("hud")) Hud.visible = root.get("hud").getAsBoolean();
+            if (root.has("autosell")) AutoSell.command = root.get("autosell").getAsString();
             if (root.has("theme")) Theme.index = Math.floorMod(root.get("theme").getAsInt(), Theme.ACCENTS.length);
             if (root.has("friends")) {
                 for (JsonElement f : root.getAsJsonArray("friends")) ModuleManager.addFriend(f.getAsString());

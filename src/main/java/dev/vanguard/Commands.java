@@ -4,17 +4,21 @@ import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.arg
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
 
 import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import dev.vanguard.module.Module;
 import dev.vanguard.module.ModuleManager;
+import dev.vanguard.module.impl.AutoSell;
 import dev.vanguard.module.impl.BaseFinder;
 import dev.vanguard.module.impl.SchematicBuilder;
 import dev.vanguard.module.impl.SusChunks;
+import dev.vanguard.util.LitematicaBridge;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -55,6 +59,19 @@ public final class Commands {
                     reply(ctx, Hud.visible ? "HUD shown" : "HUD hidden");
                     return 1;
                 }))
+                .then(literal("autosell")
+                    .executes(ctx -> {
+                        reply(ctx, "AutoSell runs /" + AutoSell.command);
+                        return 1;
+                    })
+                    .then(argument("command", StringArgumentType.greedyString()).executes(ctx -> {
+                        String c = StringArgumentType.getString(ctx, "command").trim();
+                        if (c.startsWith("/")) c = c.substring(1);
+                        AutoSell.command = c;
+                        Config.save();
+                        reply(ctx, "AutoSell will run /" + c);
+                        return 1;
+                    })))
                 .then(literal("toggle")
                     .then(argument("module", StringArgumentType.word()).suggests(MODULE_NAMES)
                         .executes(Commands::toggle)))
@@ -78,6 +95,8 @@ public final class Commands {
                     .then(literal("list").executes(Commands::schemList))
                     .then(literal("load").then(argument("file", StringArgumentType.string()).executes(Commands::schemLoad)))
                     .then(literal("origin").executes(Commands::schemOrigin))
+                    .then(literal("litematica").executes(Commands::schemLitematica))
+                    .then(literal("use").then(argument("index", IntegerArgumentType.integer(1)).executes(Commands::schemUse)))
                     .then(literal("clear").executes(ctx -> {
                         builder().clear();
                         reply(ctx, "Schematic cleared");
@@ -124,14 +143,20 @@ public final class Commands {
         return 1;
     }
 
-    private static Path schemDir() {
-        Path dir = FabricLoader.getInstance().getGameDir().resolve("vanguard").resolve("schematics");
-        try {
-            Files.createDirectories(dir);
-        } catch (IOException ignored) {
-            // listing/loading will report the problem
+    /** Litematica's own schematics folder first, then Vanguard's. */
+    private static List<Path> schemDirs() {
+        Path game = FabricLoader.getInstance().getGameDir();
+        List<Path> dirs = new ArrayList<>();
+        dirs.add(game.resolve("schematics"));
+        dirs.add(game.resolve("vanguard").resolve("schematics"));
+        for (Path d : dirs) {
+            try {
+                Files.createDirectories(d);
+            } catch (IOException ignored) {
+                // listing/loading will report the problem
+            }
         }
-        return dir;
+        return dirs;
     }
 
     private static int list(CommandContext<FabricClientCommandSource> ctx) {
@@ -172,33 +197,41 @@ public final class Commands {
     }
 
     private static int schemList(CommandContext<FabricClientCommandSource> ctx) {
-        Path dir = schemDir();
-        try (Stream<Path> files = Files.list(dir)) {
-            List<String> names = files.map(p -> p.getFileName().toString())
-                .filter(n -> n.endsWith(".litematic") || n.endsWith(".nbt"))
-                .sorted().toList();
-            if (names.isEmpty()) reply(ctx, "No schematics in " + dir);
-            for (String n : names) reply(ctx, n);
-        } catch (IOException e) {
-            reply(ctx, "Could not read " + dir);
+        if (LitematicaBridge.installed()) reply(ctx, "Litematica detected, reading its schematics folder too.");
+        int count = 0;
+        for (Path dir : schemDirs()) {
+            try (Stream<Path> files = Files.list(dir)) {
+                List<String> names = files.map(p -> p.getFileName().toString())
+                    .filter(n -> n.endsWith(".litematic") || n.endsWith(".nbt"))
+                    .sorted().toList();
+                for (String n : names) {
+                    reply(ctx, n);
+                    count++;
+                }
+            } catch (IOException e) {
+                reply(ctx, "Could not read " + dir);
+            }
         }
+        if (count == 0) reply(ctx, "No schematics found in " + schemDirs().get(0) + " or " + schemDirs().get(1));
         return 1;
     }
 
     private static int schemLoad(CommandContext<FabricClientCommandSource> ctx) {
-        Path dir = schemDir().toAbsolutePath().normalize();
-        Path file = dir.resolve(StringArgumentType.getString(ctx, "file")).normalize();
-        if (!file.startsWith(dir)) {
-            reply(ctx, "File must be inside " + dir);
-            return 0;
+        String name = StringArgumentType.getString(ctx, "file");
+        for (Path dir : schemDirs()) {
+            Path base = dir.toAbsolutePath().normalize();
+            Path file = base.resolve(name).normalize();
+            if (!file.startsWith(base) || !Files.isRegularFile(file)) continue;
+            try {
+                reply(ctx, "Loaded " + builder().load(file) + ". Stand at the lowest corner and run /vg schem origin");
+                return 1;
+            } catch (Exception e) {
+                reply(ctx, "Failed to load: " + e.getMessage());
+                return 0;
+            }
         }
-        try {
-            reply(ctx, "Loaded " + builder().load(file) + ". Stand at the lowest corner and run /vg schem origin");
-            return 1;
-        } catch (Exception e) {
-            reply(ctx, "Failed to load: " + e.getMessage());
-            return 0;
-        }
+        reply(ctx, "Could not find " + name + ". Use /vg schem list to see what is available.");
+        return 0;
     }
 
     private static int schemOrigin(CommandContext<FabricClientCommandSource> ctx) {
@@ -208,9 +241,43 @@ public final class Commands {
             reply(ctx, "Load a schematic first");
             return 0;
         }
-        builder().setOrigin(mc.player.blockPosition());
+        builder().setOrigin(mc.player.blockPosition(), false);
         reply(ctx, "Origin set. Enable SchematicBuilder to start.");
         return 1;
+    }
+
+    private static int schemLitematica(CommandContext<FabricClientCommandSource> ctx) {
+        if (!LitematicaBridge.installed()) reply(ctx, "Litematica does not look installed; checking for saved placements anyway");
+        List<LitematicaBridge.Placement> list = LitematicaBridge.placements();
+        if (list.isEmpty()) {
+            reply(ctx, "No saved Litematica placements found");
+            return 0;
+        }
+        for (int i = 0; i < list.size(); i++) {
+            LitematicaBridge.Placement p = list.get(i);
+            reply(ctx, (i + 1) + ": " + p.name() + " at " + p.origin().getX() + ", " + p.origin().getY() + ", " + p.origin().getZ());
+        }
+        reply(ctx, "Use /vg schem use <number> to build one");
+        return 1;
+    }
+
+    private static int schemUse(CommandContext<FabricClientCommandSource> ctx) {
+        int index = IntegerArgumentType.getInteger(ctx, "index");
+        List<LitematicaBridge.Placement> list = LitematicaBridge.placements();
+        if (index < 1 || index > list.size()) {
+            reply(ctx, "No placement " + index + " (run /vg schem litematica first)");
+            return 0;
+        }
+        LitematicaBridge.Placement p = list.get(index - 1);
+        try {
+            reply(ctx, "Loaded " + builder().load(p.file()));
+            builder().setOrigin(p.origin(), true);
+            reply(ctx, "Origin set to the Litematica placement. Enable SchematicBuilder to start.");
+            return 1;
+        } catch (Exception e) {
+            reply(ctx, "Failed to load: " + e.getMessage());
+            return 0;
+        }
     }
 
     private static int bases(CommandContext<FabricClientCommandSource> ctx) {

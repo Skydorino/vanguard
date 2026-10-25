@@ -6,7 +6,7 @@ import net.minecraft.client.gui.GuiGraphics;
 
 /**
  * Small pixel-art icons drawn with fills, tinted with whatever colour you pass in. Index order
- * matches the Category enum: combat, movement, world, visuals, misc. Each is 11 by 11.
+ * matches the Category enum: combat, movement, visuals, misc, donutsmp. Each is 11 by 11.
  */
 public final class Icons {
     public static final int SIZE = 11;
@@ -36,18 +36,6 @@ public final class Icons {
             "...#...#...",
             "..#...#....",
             "..........."},
-        { // world: globe
-            "...#####...",
-            "..#..#..#..",
-            ".#...#...#.",
-            "#....#....#",
-            "#....#....#",
-            "###########",
-            "#....#....#",
-            "#....#....#",
-            ".#...#...#.",
-            "..#..#..#..",
-            "...#####..."},
         { // visuals: eye
             "...........",
             "....###....",
@@ -71,7 +59,19 @@ public final class Icons {
             ".####.####.",
             ".####.####.",
             ".####.####.",
-            "..........."}
+            "..........."},
+        { // donutsmp: a donut
+            "...#####...",
+            "..#######..",
+            ".#########.",
+            "####...####",
+            "###.....###",
+            "###.....###",
+            "###.....###",
+            "####...####",
+            ".#########.",
+            "..#######..",
+            "...#####..."}
     };
 
     /** For each icon and row: start/length pairs of filled runs, so a row costs one fill per run. */

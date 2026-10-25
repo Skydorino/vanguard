@@ -5,6 +5,7 @@ import dev.vanguard.gui.Theme;
 import dev.vanguard.module.Module;
 import dev.vanguard.module.ModuleManager;
 import dev.vanguard.module.impl.BaseFinder;
+import dev.vanguard.module.impl.SpotifyHud;
 import dev.vanguard.module.impl.SusChunks;
 import dev.vanguard.module.impl.SwordInspect;
 import java.util.ArrayList;
@@ -36,6 +37,7 @@ public final class Hud {
     private static int fps;
     private static long fpsStamp;
     private static long cacheStamp;
+    private static long spotifyStamp;
 
     // Rebuilt every ~50 ms
     private static final List<Module> ACTIVE = new ArrayList<>();
@@ -50,6 +52,13 @@ public final class Hud {
     private static String susText;
     private static int susWidth;
 
+    private static String spotifyArtist = "";
+    private static String spotifyTitle;
+    private static int spotifyW;
+    private static int spotifyArtistW;
+    private static int spotifyY;
+    private static boolean spotifyProgress;
+
     private Hud() {}
 
     public static void init() {
@@ -63,6 +72,56 @@ public final class Hud {
         Draw.pill(g, 4, y, font.width(text) + 16, y + font.lineHeight + 6, PILL);
         g.fill(5, y + 3, 7, y + font.lineHeight + 3, accent);
         g.drawString(font, text, 12, y + 3, 0xFFFFFFFF, false);
+    }
+
+    private static void updateSpotify(Minecraft mc, Font font) {
+        spotifyTitle = null;
+        Module sp = ModuleManager.find("SpotifyHud");
+        if (!(sp instanceof SpotifyHud spotify) || !spotify.isEnabled()) return;
+        String t = SpotifyHud.title();
+        if (t.isEmpty() || !(SpotifyHud.playing() || spotify.get("showpaused") > 0)) return;
+
+        String a = SpotifyHud.artist();
+        String sep = a.isEmpty() ? "" : "  -  ";
+        int maxPx = (int) (mc.getWindow().getGuiScaledWidth() * Math.max(10.0, Math.min(90.0, spotify.get("maxwidth"))) / 100.0);
+        int avail = Math.max(40, maxPx - 30);
+        if (font.width(a + sep + t) > avail) {
+            if (avail - font.width(a + sep) < 30) a = font.plainSubstrByWidth(a, avail / 3);
+            t = font.plainSubstrByWidth(t, Math.max(10, avail - font.width(a + sep)));
+        }
+        spotifyArtist = a + sep;
+        spotifyTitle = t;
+        spotifyArtistW = font.width(spotifyArtist);
+        spotifyW = spotifyArtistW + font.width(t);
+        spotifyY = (int) spotify.get("y");
+        spotifyProgress = spotify.get("progress") > 0;
+    }
+
+    private static void drawSpotify(GuiGraphics g, Font font, int accent, long nowMs) {
+        if (spotifyTitle == null) return;
+        int w = spotifyW + 30;
+        int x1 = (g.guiWidth() - w) / 2;
+        int y1 = spotifyY;
+        int h = font.lineHeight + 9;
+        Draw.pill(g, x1, y1, x1 + w, y1 + h, PILL);
+
+        boolean playing = SpotifyHud.playing();
+        for (int b = 0; b < 3; b++) { // tiny equalizer
+            int bh = playing ? 3 + (int) (4 * (0.5 + 0.5 * Math.sin(nowMs / 140.0 + b * 1.7))) : 3;
+            int bx = x1 + 8 + b * 3;
+            g.fill(bx, y1 + 11 - bh, bx + 2, y1 + 11, accent);
+        }
+        int tx = x1 + 22;
+        g.drawString(font, spotifyArtist, tx, y1 + 4, 0xFF9A9AAE, false);
+        g.drawString(font, spotifyTitle, tx + spotifyArtistW, y1 + 4, 0xFFFFFFFF, false);
+
+        long len = SpotifyHud.lengthMs();
+        if (spotifyProgress && len > 0 && SpotifyHud.positionMs() >= 0) {
+            long pos = SpotifyHud.positionMs() + (playing ? nowMs - SpotifyHud.sampleAt() : 0);
+            float ratio = Math.max(0f, Math.min(1f, pos / (float) len));
+            g.fill(x1 + 7, y1 + h - 3, x1 + w - 7, y1 + h - 2, 0xFF22222E);
+            g.fill(x1 + 7, y1 + h - 3, x1 + 7 + (int) ((w - 14) * ratio), y1 + h - 2, accent);
+        }
     }
 
     private static void rebuild(Minecraft mc, LocalPlayer player, Font font) {
@@ -131,14 +190,20 @@ public final class Hud {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (player == null || mc.options.hideGui) return;
-        if (!visible) {
-            SwordInspect.render(g, mc); // still shows if you trigger it yourself
-            return;
-        }
         Font font = mc.font;
         int accent = Theme.accent();
-
         long nowMs = System.currentTimeMillis();
+
+        if (nowMs - spotifyStamp >= 50) {
+            spotifyStamp = nowMs;
+            updateSpotify(mc, font);
+        }
+        if (!visible) {
+            drawSpotify(g, font, accent, nowMs);   // you switched it on yourself, so it stays
+            SwordInspect.render(g, mc);
+            return;
+        }
+
         frames++;
         if (nowMs - fpsStamp >= 1000) {
             fps = frames;
@@ -194,6 +259,7 @@ public final class Hud {
             g.drawString(font, susText, 12, ty + 3, 0xFFFFFFFF, false);
         }
 
+        drawSpotify(g, font, accent, nowMs);
         SwordInspect.render(g, mc);
     }
 }

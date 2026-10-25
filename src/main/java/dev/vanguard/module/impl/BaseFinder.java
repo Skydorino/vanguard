@@ -43,7 +43,7 @@ public class BaseFinder extends Module {
     private int timer;
 
     public BaseFinder() {
-        super("BaseFinder", Category.WORLD, "Flags chunks full of storage and highlights it through walls");
+        super("BaseFinder", Category.DONUTSMP, "Flags chunks full of storage and highlights it through walls");
         setting("interval", 40);   // ticks between scans
         setting("minstorage", 4);  // storage blocks in one chunk to flag it
         setting("radius", 12);     // chunks around you to check (only loaded ones exist)

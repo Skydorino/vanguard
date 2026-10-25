@@ -11,6 +11,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.item.Item;
@@ -19,19 +20,28 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Builds a loaded schematic block by block, bottom-up, using blocks from your inventory.
- * Limitation: it places the block type only. Block state (stair direction, slab half, log axis,
- * and so on) is not matched, so best suited to full blocks like stone, wool, planks, glass.
+ * Builds a loaded schematic block by block, bottom-up, using blocks from your inventory. Load
+ * from the Litematica folder (/vg schem list|load) or from a saved Litematica placement
+ * (/vg schem litematica, then /vg schem use N), which keeps Litematica's own origin. It tells you
+ * what is holding it up (missing item, out of range, nothing to attach to) next to its name on the
+ * HUD. It places the block type only, not block state, so it suits full blocks.
  */
 public class SchematicBuilder extends Module {
+    private static final int PLACED = 0;
+    private static final int NO_ITEM = 1;
+    private static final int NO_SUPPORT = 2;
+    private static final int SWAPPED = 3;
+
     private Schematic schematic;
     private BlockPos origin;
+    private boolean placementOrigin;
     private boolean[] done;
     private int placed;
     private int timer;
+    private String issue = "";
 
     public SchematicBuilder() {
-        super("SchematicBuilder", Category.WORLD, "Places blocks from a loaded schematic (/vg schem)");
+        super("SchematicBuilder", Category.DONUTSMP, "Builds a Litematica schematic from your inventory");
         setting("range", 4.0);
         setting("pertick", 1);
         setting("delay", 1);
@@ -42,6 +52,7 @@ public class SchematicBuilder extends Module {
         origin = null;
         done = null;
         placed = 0;
+        issue = "";
         return schematic.name + ": " + schematic.entries.size() + " blocks";
     }
 
@@ -49,12 +60,17 @@ public class SchematicBuilder extends Module {
         return schematic != null;
     }
 
-    /** The schematic's lowest corner will sit at this position. */
-    public void setOrigin(BlockPos pos) {
+    /**
+     * placementOrigin false: the schematic's lowest corner sits at pos (stand at the corner).
+     * placementOrigin true: pos is a Litematica placement origin, used exactly as Litematica does.
+     */
+    public void setOrigin(BlockPos pos, boolean placementOrigin) {
         origin = pos;
+        this.placementOrigin = placementOrigin;
         if (schematic != null) {
             done = new boolean[schematic.entries.size()];
             placed = 0;
+            issue = "";
         }
     }
 
@@ -63,19 +79,25 @@ public class SchematicBuilder extends Module {
         origin = null;
         done = null;
         placed = 0;
+        issue = "";
+    }
+
+    private BlockPos worldPos(Schematic.Entry e) {
+        BlockPos rel = placementOrigin ? e.rel() : e.rel().subtract(schematic.min);
+        return origin.offset(rel);
     }
 
     public String status() {
         if (schematic == null) return "No schematic loaded";
         if (origin == null) return schematic.name + " loaded, origin not set (use /vg schem origin)";
         return schematic.name + " at " + origin.getX() + ", " + origin.getY() + ", " + origin.getZ()
-            + ": " + placed + "/" + schematic.entries.size() + " placed";
+            + ": " + placed + "/" + schematic.entries.size() + " placed" + (issue.isEmpty() ? "" : " (" + issue + ")");
     }
 
     @Override
     public String hudLabel() {
         if (schematic == null || origin == null) return name;
-        return name + " " + placed + "/" + schematic.entries.size();
+        return name + " " + placed + "/" + schematic.entries.size() + (issue.isEmpty() ? "" : " - " + issue);
     }
 
     @Override
@@ -91,13 +113,17 @@ public class SchematicBuilder extends Module {
         double rangeSq = range * range;
         Vec3 eye = player.getEyePosition();
         int budget = Math.max(1, (int) get("pertick"));
+        boolean placedAny = false;
+        boolean anyInRange = false;
+        String blocked = "";
         List<Schematic.Entry> entries = schematic.entries;
 
         for (int i = 0; i < entries.size() && budget > 0; i++) {
             if (done[i]) continue;
             Schematic.Entry e = entries.get(i);
-            BlockPos pos = origin.offset(e.rel());
+            BlockPos pos = worldPos(e);
             if (Vec3.atCenterOf(pos).distanceToSqr(eye) > rangeSq) continue;
+            anyInRange = true;
 
             BlockState current = level.getBlockState(pos);
             if (current.is(e.state().getBlock())) {
@@ -106,22 +132,34 @@ public class SchematicBuilder extends Module {
                 continue;
             }
             if (!current.canBeReplaced()) continue;
-            if (tryPlace(player, level, pos, e.state())) budget--;
+
+            int result = tryPlace(player, level, pos, e.state());
+            if (result == PLACED || result == SWAPPED) {
+                budget--;
+                placedAny = true;
+            } else if (result == NO_ITEM) {
+                blocked = "need " + BuiltInRegistries.ITEM.getKey(e.state().getBlock().asItem()).getPath();
+            } else if (result == NO_SUPPORT) {
+                blocked = "nothing to attach to";
+            }
         }
+        if (placedAny) issue = "";
+        else if (!anyInRange) issue = placed >= entries.size() ? "done" : "move closer (range " + range + ")";
+        else issue = blocked;
         timer = (int) get("delay");
     }
 
-    private boolean tryPlace(LocalPlayer player, ClientLevel level, BlockPos pos, BlockState state) {
+    private int tryPlace(LocalPlayer player, ClientLevel level, BlockPos pos, BlockState state) {
         Item item = state.getBlock().asItem();
-        if (item == net.minecraft.world.item.Items.AIR) return false;
+        if (item == net.minecraft.world.item.Items.AIR) return NO_ITEM;
 
         int slot = Inv.findHotbar(player, item);
         if (slot < 0) {
             int inv = Inv.findInventory(player, item);
-            if (inv < 0) return false;
+            if (inv < 0) return NO_ITEM;
             int selected = player.getInventory().getSelectedSlot();
             Inv.click(player, Inv.menuSlot(inv), selected, ClickType.SWAP);
-            return true; // item arrives next tick; this spends the budget
+            return SWAPPED; // the item arrives next tick; this spends the budget
         }
 
         for (Direction dir : Direction.values()) {
@@ -134,8 +172,8 @@ public class SchematicBuilder extends Module {
             player.getInventory().setSelectedSlot(slot);
             mc.gameMode.useItemOn(player, InteractionHand.MAIN_HAND, hit);
             player.swing(InteractionHand.MAIN_HAND);
-            return true;
+            return PLACED;
         }
-        return false;
+        return NO_SUPPORT;
     }
 }

@@ -48,3 +48,10 @@ Reach only changes what the client allows; many servers reject hits past roughly
 
 - SusChunks scores chunks by rarely-natural blocks (redstone parts, concrete, glass, obsidian, metal blocks...). Raise minscore for fewer false hits.
 - ElytraKit is singleplayer only: it gives you a real elytra and fireworks on the built-in server.
+
+## DonutSMP column
+BaseFinder, SusChunks, TunnelESP, AmethystNotifier, SchematicBuilder and AutoSell. (Xray moved to Visuals.)
+- SpotifyHud (Visuals): shows the song at the top centre. Linux needs playerctl (sudo pacman -S playerctl).
+- AutoSell: `/vg autosell <command>` sets what it runs (default "sell all"). Many servers ban automated commands.
+- Schematics: Litematica's own `schematics` folder is read first. `/vg schem litematica` lists saved Litematica
+  placements and `/vg schem use N` builds one from Litematica's own origin.

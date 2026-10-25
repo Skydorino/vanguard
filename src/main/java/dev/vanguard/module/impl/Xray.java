@@ -56,7 +56,7 @@ public class Xray extends Module {
     private boolean smartCullSaved;
 
     public Xray() {
-        super("Xray", Category.WORLD, "See ores, storage and bases through the ground");
+        super("Xray", Category.VISUALS, "See ores, storage and bases through the ground");
         instance = this;
         setting("see", 1);        // 1 = make the terrain see-through
         setting("ores", 1);       // diamond, emerald, gold, ancient debris, quartz

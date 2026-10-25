@@ -3,9 +3,9 @@ package dev.vanguard.module;
 public enum Category {
     COMBAT("Combat"),
     MOVEMENT("Movement"),
-    WORLD("World"),
     VISUALS("Visuals"),
-    MISC("Misc");
+    MISC("Misc"),
+    DONUTSMP("DonutSMP");
 
     public final String label;
 

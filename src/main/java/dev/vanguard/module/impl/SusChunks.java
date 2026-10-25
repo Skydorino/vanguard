@@ -44,7 +44,7 @@ public class SusChunks extends Module {
     private int timer;
 
     public SusChunks() {
-        super("SusChunks", Category.WORLD, "Flags chunks full of blocks that rarely generate naturally");
+        super("SusChunks", Category.DONUTSMP, "Flags chunks full of blocks that rarely generate naturally");
         setting("radius", 8);       // chunks around you to check
         setting("interval", 100);   // ticks between scans
         setting("minscore", 12);    // points a chunk needs to be flagged

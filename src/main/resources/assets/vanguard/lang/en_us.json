@@ -54,5 +54,7 @@
   "key.vanguard.instantcrystal": "Toggle InstantCrystal",
   "key.vanguard.disableall": "Disable All Modules",
   "key.vanguard.suschunks": "Toggle SusChunks",
-  "key.vanguard.elytrakit": "Toggle ElytraKit"
+  "key.vanguard.elytrakit": "Toggle ElytraKit",
+  "key.vanguard.spotifyhud": "Toggle SpotifyHud",
+  "key.vanguard.autosell": "Toggle AutoSell"
 }

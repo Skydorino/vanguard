@@ -23,7 +23,7 @@ public class TunnelESP extends Module {
     private int timer;
 
     public TunnelESP() {
-        super("TunnelESP", Category.WORLD, "Highlights long straight tunnels dug by players");
+        super("TunnelESP", Category.DONUTSMP, "Highlights long straight tunnels dug by players");
         setting("radius", 24);      // blocks around you to scan
         setting("vrange", 12);      // blocks above and below you to scan
         setting("minlength", 8);    // shortest tunnel to show

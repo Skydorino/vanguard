@@ -26,7 +26,7 @@ public class AmethystNotifier extends Module {
     private int timer;
 
     public AmethystNotifier() {
-        super("AmethystNotifier", Category.WORLD, "Alerts you when amethyst grows in loaded chunks");
+        super("AmethystNotifier", Category.DONUTSMP, "Alerts you when amethyst grows in loaded chunks");
         setting("radius", 5);       // chunks around you to check
         setting("interval", 100);   // ticks between scans
         setting("threshold", 3);    // growth events in one scan to alert
