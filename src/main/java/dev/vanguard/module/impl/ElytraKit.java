@@ -13,10 +13,12 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 /**
- * Singleplayer only. Puts a real elytra on your chest (your chestplate is kept aside and given
- * back when you switch this off) and keeps fireworks in your inventory, so you can glide and boost.
- * It changes your inventory on the built-in server; on a multiplayer server it does nothing, because
- * those servers decide for themselves what you are wearing.
+ * For the host of a singleplayer, LAN or Essential world. Puts a real elytra on your chest (your
+ * chestplate is kept aside and given back when you switch this off) and keeps fireworks in your
+ * inventory, so you can glide and boost. It changes your inventory on the built-in server, so only
+ * the host can use it; someone who joined your world, or anyone on a normal multiplayer server, cannot.
+ * It also refuses to work in worlds with more than maxplayers people online (10 by default), and
+ * switches itself off if the count goes over while it is on.
  */
 public class ElytraKit extends Module {
     private volatile ItemStack savedChest = ItemStack.EMPTY;
@@ -24,21 +26,37 @@ public class ElytraKit extends Module {
     private int timer;
 
     public ElytraKit() {
-        super("ElytraKit", Category.MOVEMENT, "Singleplayer: wear an elytra and keep fireworks stocked");
-        setting("fireworks", 64);  // restock when you have fewer than a quarter of this
+        super("ElytraKit", Category.MOVEMENT, "Host of a small world: wear an elytra and keep fireworks stocked");
+        setting("fireworks", 64);   // restock when you have fewer than a quarter of this
+        setting("maxplayers", 10);  // refuse (or switch off) when more than this many players are online
+    }
+
+    private void refuse(LocalPlayer player, String reason) {
+        player.displayClientMessage(Component.literal("[Vanguard] ElytraKit: " + reason), false);
     }
 
     @Override
     protected void onEnable() {
-        IntegratedServer server = mc.getSingleplayerServer();
         LocalPlayer player = mc.player;
-        if (server == null || player == null) {
-            if (player != null) {
-                player.displayClientMessage(Component.literal("[Vanguard] ElytraKit only works in a singleplayer world"), false);
-            }
+        if (player == null) {
             mc.execute(() -> setEnabled(false));
             return;
         }
+        IntegratedServer server = mc.getSingleplayerServer();
+        if (server == null) {
+            refuse(player, "you are connected to someone else's server. Only the host of a singleplayer, LAN or "
+                + "Essential world can use it, because it changes the host's built-in server.");
+            mc.execute(() -> setEnabled(false));
+            return;
+        }
+        int count = server.getPlayerList().getPlayerCount();
+        int max = (int) get("maxplayers");
+        if (count > max) {
+            refuse(player, "this world has " + count + " players online, over the limit of " + max + ".");
+            mc.execute(() -> setEnabled(false));
+            return;
+        }
+
         UUID id = player.getUUID();
         timer = 0;
         server.execute(() -> {
@@ -71,6 +89,14 @@ public class ElytraKit extends Module {
         timer = 20;
         IntegratedServer server = mc.getSingleplayerServer();
         if (server == null) return;
+
+        int count = server.getPlayerList().getPlayerCount();
+        int max = (int) get("maxplayers");
+        if (count > max) {
+            refuse(player, count + " players are online now, over the limit of " + max + ". Switching off.");
+            setEnabled(false); // onDisable gives your chestplate back
+            return;
+        }
 
         int have = 0;
         for (int i = 0; i < 36; i++) {
