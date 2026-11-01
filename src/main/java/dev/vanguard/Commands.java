@@ -32,6 +32,7 @@ import net.minecraft.network.chat.Component;
 /**
  * /vg list | toggle | set | save | friend add|remove
  * /vg schem list|load|origin|clear|info     /vg bases [clear]
+ * /vg panic  — silently disables all modules, clears all keybinds, hides HUD, closes any open screen
  */
 public final class Commands {
     private static final SuggestionProvider<FabricClientCommandSource> MODULE_NAMES =
@@ -57,6 +58,12 @@ public final class Commands {
                     Hud.visible = !Hud.visible;
                     Config.save();
                     reply(ctx, Hud.visible ? "HUD shown" : "HUD hidden");
+                    return 1;
+                }))
+                .then(literal("panic").executes(ctx -> {
+                    ModuleManager.panic();
+                    Minecraft mc = Minecraft.getInstance();
+                    if (mc.screen != null) mc.setScreen(null);
                     return 1;
                 }))
                 .then(literal("autosell")
@@ -293,3 +300,4 @@ public final class Commands {
         ctx.getSource().sendFeedback(Component.literal("[Vanguard] " + message));
     }
 }
+// END OF FILE

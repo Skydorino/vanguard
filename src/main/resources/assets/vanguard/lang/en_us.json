@@ -56,5 +56,7 @@
   "key.vanguard.suschunks": "Toggle SusChunks",
   "key.vanguard.elytrakit": "Toggle ElytraKit",
   "key.vanguard.spotifyhud": "Toggle SpotifyHud",
-  "key.vanguard.autosell": "Toggle AutoSell"
+  "key.vanguard.autosell": "Toggle AutoSell",
+  "key.vanguard.aimassist": "AimAssist",
+  "key.vanguard.silentaim": "SilentAim"
 }

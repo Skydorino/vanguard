@@ -4,7 +4,9 @@ import com.mojang.blaze3d.platform.InputConstants;
 import dev.vanguard.Config;
 import dev.vanguard.VanguardClient;
 import dev.vanguard.gui.ClickGui;
+import dev.vanguard.module.impl.AimAssist;
 import dev.vanguard.module.impl.AirWalk;
+import dev.vanguard.module.impl.SilentAim;
 import dev.vanguard.module.impl.AmethystNotifier;
 import dev.vanguard.module.impl.AnchorMacro;
 import dev.vanguard.module.impl.AutoCart;
@@ -107,6 +109,8 @@ public final class ModuleManager {
         add(new AutoXP());
         add(new AutoDrain());
         add(new TriggerBot());
+        add(new AimAssist());
+        add(new SilentAim());
         add(new Reach());
         add(new WallHit());
         add(new AutoTrap());
@@ -197,6 +201,21 @@ public final class ModuleManager {
         for (Module m : MODULES) {
             if (m.isEnabled()) m.setEnabled(false);
         }
+    }
+
+    /**
+     * Panic: disables all modules, clears every keybind back to UNKNOWN, hides the HUD.
+     * The GUI is closed by the caller. No chat output, no flash — silent.
+     */
+    public static void panic() {
+        for (Module m : MODULES) {
+            if (m.isEnabled()) m.setEnabled(false);
+            if (m.key != null) {
+                m.key.setKey(InputConstants.UNKNOWN);
+            }
+        }
+        KeyMapping.resetMapping();
+        dev.vanguard.Hud.visible = false;
     }
 
     public static List<Module> all() {

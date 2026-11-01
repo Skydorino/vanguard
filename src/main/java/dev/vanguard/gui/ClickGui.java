@@ -351,7 +351,7 @@ public class ClickGui extends Screen {
     private void drawBar(GuiGraphics g, int mx, int my, boolean click) {
         int accent = Theme.accent();
         int swatches = Theme.ACCENTS.length;
-        String[] labels = {Hud.visible ? "Hide HUD" : "Show HUD", "All off", "Save"};
+        String[] labels = {Hud.visible ? "Hide HUD" : "Show HUD", "All off", "Save", "Panic"};
         int btnW = 40;
         int totalW = swatches * 14 + 10 + labels.length * (btnW + 4);
         int x = (width - totalW) / 2;
@@ -373,24 +373,32 @@ public class ClickGui extends Screen {
 
         int bx = x + swatches * 14 + 10;
         for (int i = 0; i < labels.length; i++) {
+            boolean isPanic = i == 3;
             boolean over = Draw.inside(mx, my, bx, barY + 3, bx + btnW, barY + 15);
-            Draw.roundBox(g, bx, barY + 3, bx + btnW, barY + 15, 5, over ? Draw.alpha(accent, 160) : 0xFF2A2A38, 0xFF13131B);
+            int bgColor = isPanic ? (over ? 0xFFAA2222 : 0xFF5A1A1A) : (over ? Draw.alpha(accent, 160) : 0xFF2A2A38);
+            Draw.roundBox(g, bx, barY + 3, bx + btnW, barY + 15, 5, bgColor, 0xFF13131B);
             small(g, labels[i], bx + (btnW - smallWidth(labels[i], 0.78f)) / 2, barY + 6, over ? Theme.TEXT : 0xFFB9B9C8, 0.78f);
             if (over && click) {
                 if (i == 0) {
                     Hud.visible = !Hud.visible;
                     Config.save();
                     flash = Hud.visible ? "HUD shown" : "HUD hidden";
+                    flashUntil = System.currentTimeMillis() + 1500;
                 } else if (i == 1) {
                     ModuleManager.disableAll();
                     flash = "All modules off";
-                } else {
+                    flashUntil = System.currentTimeMillis() + 1500;
+                } else if (i == 2) {
                     Config.save();
                     flash = "Config saved";
+                    flashUntil = System.currentTimeMillis() + 1500;
+                } else {
+                    ModuleManager.panic();
+                    mc.setScreen(null);
                 }
-                flashUntil = System.currentTimeMillis() + 1500;
             }
             bx += btnW + 4;
         }
     }
 }
+// END OF FILE
