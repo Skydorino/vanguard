@@ -29,10 +29,8 @@ public class SilentAim extends Module {
     }
 
     @Override
-    public void onPreTick() {
+    public void onPreTick(LocalPlayer player, ClientLevel level) {
         // Called before vanilla reads input — rotate here so TriggerBot/reach checks see the spoofed angle
-        LocalPlayer player = mc.player;
-        ClientLevel level  = mc.level;
         if (player == null || level == null || mc.screen != null) {
             rotated = false;
             return;
