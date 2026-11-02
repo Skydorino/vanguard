@@ -65,5 +65,9 @@
   "key.vanguard.stashradar": "StashRadar",
   "key.vanguard.autochat": "AutoChat",
   "key.vanguard.autocommand": "AutoCommand",
-  "key.vanguard.critbot": "CritBot"
+  "key.vanguard.critbot": "CritBot",
+  "key.vanguard.bednuker": "BedNuker",
+  "key.vanguard.bedaura": "BedAura",
+  "key.vanguard.scaffold": "Scaffold",
+  "key.vanguard.autobuy": "AutoBuy"
 }
