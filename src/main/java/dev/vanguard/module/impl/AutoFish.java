@@ -19,8 +19,8 @@ public class AutoFish extends Module {
 
     public AutoFish() {
         super("AutoFish", Category.DONUTSMP, "Automatically casts and reels in a fishing rod");
-        setting("minhealth", 10); // stop below this health
-        setting("timeout", 600);  // ticks before assuming the hook is stuck and recasting
+        setting("minhealth", 10);
+        setting("timeout", 600);
     }
 
     @Override
@@ -43,15 +43,14 @@ public class AutoFish extends Module {
             return;
         }
 
-        // Make sure we're holding a rod
         if (!player.getMainHandItem().is(Items.FISHING_ROD)) {
-            int slot = Inv.findHotbar(Items.FISHING_ROD);
+            int slot = Inv.findHotbar(player, Items.FISHING_ROD);
             if (slot == -1) {
                 player.displayClientMessage(Component.literal("[Vanguard] AutoFish: no fishing rod in hotbar"), false);
                 setEnabled(false);
                 return;
             }
-            player.getInventory().selected = slot;
+            player.getInventory().setSelectedSlot(slot);
         }
 
         if (castDelay > 0) { castDelay--; return; }
@@ -59,7 +58,6 @@ public class AutoFish extends Module {
         FishingHook hook = player.fishing;
 
         if (hook == null) {
-            // Cast
             mc.options.keyUse.setDown(true);
             castDelay = 4;
             timeout = (int) get("timeout");
@@ -68,21 +66,19 @@ public class AutoFish extends Module {
 
         mc.options.keyUse.setDown(false);
 
-        // Timeout guard — reel in and recast if stuck
         if (--timeout <= 0) {
-            reel(player);
+            reel();
             return;
         }
 
-        // Detect bite: hook velocity goes sharply negative (bobs under water)
         if (hook.getDeltaMovement().y < -0.1) {
-            reel(player);
+            reel();
         }
     }
 
-    private void reel(LocalPlayer player) {
+    private void reel() {
         mc.options.keyUse.setDown(true);
-        castDelay = 15; // wait a moment then cast again
+        castDelay = 15;
     }
 }
 // END OF FILE
