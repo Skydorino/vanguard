@@ -58,5 +58,12 @@
   "key.vanguard.spotifyhud": "Toggle SpotifyHud",
   "key.vanguard.autosell": "Toggle AutoSell",
   "key.vanguard.aimassist": "AimAssist",
-  "key.vanguard.silentaim": "SilentAim"
+  "key.vanguard.silentaim": "SilentAim",
+  "key.vanguard.autofish": "AutoFish",
+  "key.vanguard.autofarm": "AutoFarm",
+  "key.vanguard.cheststealer": "ChestStealer",
+  "key.vanguard.stashradar": "StashRadar",
+  "key.vanguard.autochat": "AutoChat",
+  "key.vanguard.autocommand": "AutoCommand",
+  "key.vanguard.critbot": "CritBot"
 }

@@ -10,6 +10,12 @@ import dev.vanguard.module.impl.SilentAim;
 import dev.vanguard.module.impl.AmethystNotifier;
 import dev.vanguard.module.impl.AnchorMacro;
 import dev.vanguard.module.impl.AutoCart;
+import dev.vanguard.module.impl.AutoChat;
+import dev.vanguard.module.impl.AutoCommand;
+import dev.vanguard.module.impl.AutoFarm;
+import dev.vanguard.module.impl.AutoFish;
+import dev.vanguard.module.impl.ChestStealer;
+import dev.vanguard.module.impl.StashRadar;
 import dev.vanguard.module.impl.AutoDrain;
 import dev.vanguard.module.impl.AutoHitCrystal;
 import dev.vanguard.module.impl.AutoMLG;
@@ -28,6 +34,7 @@ import dev.vanguard.module.impl.AutoXP;
 import dev.vanguard.module.impl.BaseFinder;
 import dev.vanguard.module.impl.Boatfly;
 import dev.vanguard.module.impl.CartRefill;
+import dev.vanguard.module.impl.CritBot;
 import dev.vanguard.module.impl.CrystalOptimizer;
 import dev.vanguard.module.impl.FastUse;
 import dev.vanguard.module.impl.ElytraKit;
@@ -120,6 +127,7 @@ public final class ModuleManager {
         add(new InstantLunge());
         add(new AutoTap());
         add(new JumpReset());
+        add(new CritBot());
         add(new Sprint());
         add(new AutoWalk());
         add(new Orbit());
@@ -135,6 +143,12 @@ public final class ModuleManager {
         add(new SusChunks());
         add(new SchematicBuilder());
         add(new AutoSell());
+        add(new AutoFish());
+        add(new AutoFarm());
+        add(new ChestStealer());
+        add(new StashRadar());
+        add(new AutoChat());
+        add(new AutoCommand());
         add(new Xray());
         add(new TunnelESP());
         add(new AmethystNotifier());
@@ -210,12 +224,12 @@ public final class ModuleManager {
     public static void panic() {
         for (Module m : MODULES) {
             if (m.isEnabled()) m.setEnabled(false);
-            if (m.key != null) {
-                m.key.setKey(InputConstants.UNKNOWN);
-            }
+            if (m.key != null) m.key.setKey(InputConstants.UNKNOWN);
         }
         KeyMapping.resetMapping();
         dev.vanguard.Hud.visible = false;
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+        mc.execute(() -> { if (mc.screen != null) mc.setScreen(null); });
     }
 
     public static List<Module> all() {
