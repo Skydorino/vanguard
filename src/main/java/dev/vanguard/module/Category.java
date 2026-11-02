@@ -5,7 +5,8 @@ public enum Category {
     MOVEMENT("Movement"),
     VISUALS("Visuals"),
     MISC("Misc"),
-    DONUTSMP("DonutSMP");
+    DONUTSMP("DonutSMP"),
+    BEDWARS("Bedwars");
 
     public final String label;
 
