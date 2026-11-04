@@ -48,6 +48,7 @@ import dev.vanguard.module.impl.Freecam;
 import dev.vanguard.module.impl.Freelook;
 import dev.vanguard.module.impl.Fullbright;
 import dev.vanguard.module.impl.Galaxy;
+import dev.vanguard.module.impl.GhostKit;
 import dev.vanguard.module.impl.InstantLunge;
 import dev.vanguard.module.impl.JumpCircles;
 import dev.vanguard.module.impl.ItemLean;
@@ -173,6 +174,7 @@ public final class ModuleManager {
         add(new PingDisplay());
         add(new SpotifyHud());
         add(new AutoMine());
+        add(new GhostKit());
         add(new PerformanceMode());
         add(new FastUse());
 
