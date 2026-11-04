@@ -8,7 +8,6 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ServerboundSetCreativeModeSlotPacket;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.PotionContents;
@@ -109,26 +108,30 @@ public class GhostKit extends Module {
         return List.of(elytra, totem1, totem2, pots, gaps, pearls, sword, pick, bow);
     }
 
-    /** Looks up an enchantment by its registry path and applies it. */
+    /** Looks up an enchantment by its minecraft:path registry key and applies it. */
     private void addEnchant(ItemStack stack, ClientLevel level, String path, int lvl) {
-        ResourceLocation id = ResourceLocation.withDefaultNamespace(path);
-        Optional<Holder.Reference<Enchantment>> ref =
-            level.registryAccess()
-                .lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT)
-                .get(id);
-        if (ref.isEmpty()) return;
+        try {
+            var registry = level.registryAccess()
+                .lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT);
+            // Build the resource key manually to avoid importing ResourceLocation
+            var key = net.minecraft.resources.ResourceKey.create(
+                net.minecraft.core.registries.Registries.ENCHANTMENT,
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("minecraft", path));
+            Optional<Holder.Reference<Enchantment>> ref = registry.get(key);
+            if (ref.isEmpty()) return;
 
-        ItemEnchantments existing = stack.getOrDefault(
-            net.minecraft.core.component.DataComponents.ENCHANTMENTS,
-            ItemEnchantments.EMPTY);
-        ItemEnchantments.Mutable mutable = new ItemEnchantments.Mutable(existing);
-        mutable.set(ref.get(), lvl);
-        stack.set(net.minecraft.core.component.DataComponents.ENCHANTMENTS, mutable.toImmutable());
+            ItemEnchantments existing = stack.getOrDefault(
+                net.minecraft.core.component.DataComponents.ENCHANTMENTS,
+                ItemEnchantments.EMPTY);
+            ItemEnchantments.Mutable mutable = new ItemEnchantments.Mutable(existing);
+            mutable.set(ref.get(), lvl);
+            stack.set(net.minecraft.core.component.DataComponents.ENCHANTMENTS, mutable.toImmutable());
+        } catch (Exception ignored) {}
     }
 
     private void applyPotion(ItemStack stack, String path) {
         try {
-            ResourceLocation id = ResourceLocation.withDefaultNamespace(path);
+            var id = net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("minecraft", path);
             var reg = BuiltInRegistries.POTION;
             var potion = reg.get(id);
             if (potion != null) {
