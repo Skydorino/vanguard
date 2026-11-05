@@ -27,13 +27,17 @@ public class GhostKit extends Module {
     private static Field localPlayerModeField;
 
     static {
-        try {
-            Class<?> gm = net.minecraft.client.multiplayer.MultiPlayerGameMode.class;
-            localPlayerModeField = gm.getDeclaredField("localPlayerMode");
-            localPlayerModeField.setAccessible(true);
-        } catch (NoSuchFieldException e) {
-            localPlayerModeField = null;
+        // Scan for the first GameType field in MultiPlayerGameMode rather than hardcoding
+        // the Mojang-mapped name, which differs between MC versions.
+        Field found = null;
+        for (Field f : net.minecraft.client.multiplayer.MultiPlayerGameMode.class.getDeclaredFields()) {
+            if (f.getType() == GameType.class) {
+                f.setAccessible(true);
+                found = f;
+                break;
+            }
         }
+        localPlayerModeField = found;
     }
 
     public GhostKit() {
