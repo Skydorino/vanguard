@@ -70,5 +70,11 @@
   "key.vanguard.bedaura": "BedAura",
   "key.vanguard.scaffold": "Scaffold",
   "key.vanguard.autobuy": "AutoBuy",
-  "key.vanguard.ghostkit": "GhostKit"
+  "key.vanguard.ghostkit": "GhostKit",
+  "key.vanguard.autobreed": "AutoBreed",
+  "key.vanguard.autokill": "AutoKill",
+  "key.vanguard.autosmelt": "AutoSmelt",
+  "key.vanguard.autodrop": "AutoDrop",
+  "key.vanguard.autoenchant": "AutoEnchant",
+  "key.vanguard.cropnotifier": "CropNotifier"
 }
